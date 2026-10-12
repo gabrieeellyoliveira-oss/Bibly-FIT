@@ -44,12 +44,12 @@ export default function Home() {
       <section className="greet-row">
         <div className="greet">
           <h1 className="serif greet-title">
-            Oi, {profile.name || 'linda'} <Icon name="heart" fill size={20} className="heart" />
+            Oi, {profile.name || 'linda'}
           </h1>
           <p className="greet-sub">
             Disciplina hoje,
             <br />
-            resultados amanhã. <Icon name="heart" fill size={14} className="heart" />
+            resultados amanhã.
           </p>
         </div>
         <button className="streak" onClick={() => go('/treinos')}>
