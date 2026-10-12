@@ -2270,3 +2270,25 @@ p {
 #toast.show {
   transform: translate(-50%, 0);
 }
+
+/* Capa do treino: imagem inteira sempre visível (inclusive os pés), também no Safari */
+.detail-hero {
+  height: min(52vh, 440px);
+}
+
+.detail-hero img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  padding: calc(env(safe-area-inset-top) + 16px) 20px 52px;
+  box-sizing: border-box;
+}
+
+.workout-thumb img,
+.ex-thumb img {
+  max-width: 100%;
+  max-height: 100%;
+}

@@ -190,10 +190,6 @@ export default function WorkoutDetail({ id, query }) {
 
         {editing && (
           <section className="form detail-edit">
-            <label>
-              Nome
-              <input value={workout.name} onChange={(e) => setWorkout({ name: e.target.value })} />
-            </label>
             <div className="form-row">
               <label>
                 Foco
