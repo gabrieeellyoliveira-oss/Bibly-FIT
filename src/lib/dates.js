@@ -37,3 +37,17 @@ export const daysInMonth = (d = new Date()) =>
   new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
 
 export const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36)
+
+export const WEEKDAYS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+
+// "Segunda, 12 de outubro"
+export const fmtLong = (k) => {
+  const d = fromKey(k)
+  return `${WEEKDAYS[d.getDay()]}, ${d.getDate()} de ${MONTHS[d.getMonth()].toLowerCase()}`
+}
+
+export const addDays = (d, n) => {
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  x.setDate(x.getDate() + n)
+  return x
+}

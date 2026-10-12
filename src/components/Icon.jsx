@@ -70,6 +70,8 @@ const paths = {
     </>
   ),
   check: <path d="M20 6 9 17l-5-5" />,
+  moon: <path d="M20.5 13.5A8.5 8.5 0 1 1 10.5 3.5a6.5 6.5 0 0 0 10 10z" />,
+  play: <path d="M7 4.5v15l12.5-7.5z" />,
   plus: <path d="M12 5v14M5 12h14" />,
   minus: <path d="M5 12h14" />,
   trash: <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6" />,
@@ -90,6 +92,7 @@ const paths = {
 }
 
 const filled = {
+  play: <path d="M7 4.5v15l12.5-7.5z" fill="currentColor" />,
   home: <path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" fill="currentColor" />,
   image: (
     <>

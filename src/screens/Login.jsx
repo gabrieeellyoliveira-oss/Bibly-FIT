@@ -21,6 +21,7 @@ export default function Login() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [invalid, setInvalid] = useState(null) // 'name' | 'email' | 'password'
 
   useEffect(() => {
     if (recovering) setMode('newPassword')
@@ -28,6 +29,7 @@ export default function Login() {
 
   const switchTo = (m) => {
     setMode(m)
+    setInvalid(null)
     setError('')
     setNotice('')
   }
@@ -36,6 +38,16 @@ export default function Login() {
     e.preventDefault()
     setError('')
     setNotice('')
+    setInvalid(null)
+    const fail = (field, msg) => {
+      setInvalid(field)
+      setError(msg)
+    }
+    if (mode === 'signup' && !name.trim()) return fail('name', 'Conte como você quer ser chamada.')
+    if (mode !== 'newPassword' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
+      return fail('email', email.trim() ? 'Esse e-mail não parece válido.' : 'Digite seu e-mail.')
+    if (mode !== 'reset' && password.length < 6)
+      return fail('password', password ? 'A senha precisa ter pelo menos 6 caracteres.' : 'Digite sua senha.')
     setBusy(true)
     try {
       if (mode === 'login') {
@@ -78,9 +90,10 @@ export default function Login() {
       <div className="login-brand">
         <div className="brand">bibly</div>
         <div className="brand-tag">YOUR PERSONAL WELLNESS SPACE</div>
+        <p className="login-welcome serif">Seu espaço, sua evolução ♡</p>
       </div>
 
-      <form className="card login-card form" onSubmit={submit}>
+      <form className="card login-card form" onSubmit={submit} noValidate>
         <div className="login-head">
           <h1 className="serif page-title">{title}</h1>
           <p className="greet-sub">{subtitle}</p>
@@ -89,7 +102,7 @@ export default function Login() {
         {mode === 'signup' && (
           <label>
             Como quer ser chamada?
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome" autoComplete="given-name" />
+            <input aria-invalid={invalid === 'name'} value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome" autoComplete="given-name" />
           </label>
         )}
 
@@ -98,6 +111,7 @@ export default function Login() {
             E-mail
             <input
               type="email"
+              aria-invalid={invalid === 'email'}
               inputMode="email"
               autoComplete="email"
               autoCapitalize="none"
@@ -115,6 +129,7 @@ export default function Login() {
             <span className="password-field">
               <input
                 type={showPassword ? 'text' : 'password'}
+                aria-invalid={invalid === 'password'}
                 autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -122,7 +137,12 @@ export default function Login() {
                 minLength={6}
                 required
               />
-              <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+              >
                 {showPassword ? 'Ocultar' : 'Mostrar'}
               </button>
             </span>
@@ -135,12 +155,16 @@ export default function Login() {
           </button>
         )}
 
-        {error && <p className="login-error">{error}</p>}
+        {error && (
+          <p className="login-error" role="alert">
+            {error}
+          </p>
+        )}
         {notice && <p className="login-notice">{notice}</p>}
 
         <button className="btn-primary" type="submit" disabled={busy}>
           {busy
-            ? 'Aguarde…'
+            ? { login: 'Entrando…', signup: 'Criando conta…', reset: 'Enviando link…', newPassword: 'Salvando…' }[mode]
             : { login: 'Entrar', signup: 'Criar conta', reset: 'Enviar link', newPassword: 'Salvar nova senha' }[mode]}
           {!busy && <Icon name="arrowRight" size={18} />}
         </button>

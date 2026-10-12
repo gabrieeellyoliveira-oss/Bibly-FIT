@@ -50,6 +50,7 @@ export default function Photos() {
     await deletePhoto(p.id)
     update((s) => ({ photos: s.photos.filter((x) => x.id !== p.id) }))
     setMenu(null)
+    toast('Foto excluída')
   }
 
   return (
@@ -83,7 +84,11 @@ export default function Photos() {
       </div>
 
       {items.length === 0 ? (
-        <p className="empty">Nenhuma foto neste mês ainda.</p>
+        <div className="empty-state">
+          <Icon name="camera" size={28} />
+          <p>Nenhuma foto neste mês ainda.</p>
+          <small>Registre frente, lateral e costas para comparar sua evolução.</small>
+        </div>
       ) : (
         <div className="photo-grid">
           {items.map((p) => (
@@ -130,6 +135,7 @@ export default function Photos() {
                 onClick={() => {
                   update((s) => ({ photos: s.photos.map((x) => (x.id === menu.id ? { ...x, pose } : x)) }))
                   setMenu(null)
+                  toast('Foto marcada como ' + pose)
                 }}
               >
                 Marcar como {pose}

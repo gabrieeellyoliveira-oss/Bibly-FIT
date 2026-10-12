@@ -30,11 +30,12 @@ const TABS = [
 
 export default function App() {
   const route = useRoute()
-  const [, section, param] = route.split('/')
+  const [path, query = ''] = route.split('?')
+  const [, section, param] = path.split('/')
 
   let screen
-  if (section === 'treinos' && param) screen = <WorkoutDetail id={decodeURIComponent(param)} />
-  else if (section === 'treinos') screen = <Workouts />
+  if (section === 'treinos' && param) screen = <WorkoutDetail id={decodeURIComponent(param)} query={query} />
+  else if (section === 'treinos') screen = <Workouts query={query} />
   else if (section === 'fotos') screen = <Photos />
   else if (section === 'perfil') screen = <Profile />
   else screen = <Home />
@@ -43,7 +44,9 @@ export default function App() {
 
   return (
     <div className="app">
-      <main className="screen">{screen}</main>
+      <main className="screen" key={path}>
+        {screen}
+      </main>
       <nav className="tabbar">
         {TABS.map((t) => {
           const on = active === t.path

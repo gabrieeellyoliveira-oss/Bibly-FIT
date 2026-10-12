@@ -1,5 +1,4 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
-import { seedWorkouts } from './seed'
 import { supabase } from './supabase'
 import { localGet, setPhotoUser, uploadPhoto } from './photos'
 import { toast } from '../components/ui'
@@ -11,8 +10,10 @@ const cacheKey = (uid) => (uid ? `${LOCAL_KEY}:${uid}` : LOCAL_KEY)
 const initialState = () => ({
   version: 1,
   profile: { name: '', weeklyGoal: 5, photoGoal: 6 },
-  workouts: seedWorkouts(),
-  logs: [], // { id, date: 'YYYY-MM-DD', workoutId }
+  workouts: [], // conta nova começa vazia; treinos sugeridos ficam a um toque (Treinos)
+  logs: [], // { id, date: 'YYYY-MM-DD', workoutId, startedAt?, durationMin?, completed?, total? }
+  session: null, // treino em andamento: { workoutId, startedAt, done: [exerciseId] }
+  restDays: [], // ['YYYY-MM-DD'] dias marcados como descanso
   measures: [], // { id, date, weight, waist, hip, thigh, arm }
   photos: [], // { id, date, pose, pending? } — a imagem fica no IndexedDB / Storage
   pinHash: null,

@@ -33,6 +33,7 @@ export default function Profile() {
       const v = String(form[f.key]).replace(',', '.').trim()
       entry[f.key] = v === '' || isNaN(Number(v)) ? '' : Number(v)
     })
+    if (FIELDS.every((f) => entry[f.key] === '')) return toast('Preencha pelo menos uma medida')
     update((s) => ({ measures: [...s.measures.filter((m) => m.date !== today), entry] }))
     toast('Medidas salvas ♥')
   }
@@ -84,6 +85,10 @@ export default function Profile() {
           </button>
         </form>
 
+        {history.length === 0 && (
+          <p className="hint">Nenhuma medida registrada ainda. Preencha os campos acima e toque em Salvar medidas.</p>
+        )}
+
         {history.length > 0 && (
           <ul className="measure-history">
             {history.map((m) => (
@@ -104,7 +109,11 @@ export default function Profile() {
                 <button
                   className="icon-btn icon-btn-sm"
                   aria-label="Excluir medida"
-                  onClick={() => confirm('Excluir essas medidas?') && update((s) => ({ measures: s.measures.filter((x) => x.id !== m.id) }))}
+                  onClick={() => {
+                    if (!confirm('Excluir essas medidas?')) return
+                    update((s) => ({ measures: s.measures.filter((x) => x.id !== m.id) }))
+                    toast('Medidas excluídas')
+                  }}
                 >
                   <Icon name="trash" size={16} />
                 </button>
@@ -121,7 +130,11 @@ export default function Profile() {
             <span className="muted">
               <Icon name="lock" size={14} /> Fotos protegidas por PIN
             </span>
-            <button className="btn-small" onClick={() => confirm('Remover o PIN das fotos?') && update(() => ({ pinHash: null }))}>
+            <button className="btn-small" onClick={() => {
+                if (!confirm('Remover o PIN das fotos?')) return
+                update(() => ({ pinHash: null }))
+                toast('PIN removido')
+              }}>
               Remover PIN
             </button>
           </div>
@@ -150,6 +163,7 @@ export default function Profile() {
             <button
               className="btn-small"
               onClick={() => {
+                if (!confirm('Sair da sua conta neste aparelho?')) return
                 sessionStorage.removeItem('bibly:photos-unlocked')
                 supabase.auth.signOut()
               }}

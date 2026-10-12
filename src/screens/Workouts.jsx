@@ -1,15 +1,16 @@
 import { useState } from 'react'
 import Icon from '../components/Icon'
-import { PageHeader, Sheet } from '../components/ui'
+import { PageHeader, Sheet, toast } from '../components/ui'
 import { go } from '../lib/router'
 import { nextWorkout, useStore } from '../lib/store'
 import { fmtBR } from '../lib/dates'
+import { seedWorkouts } from '../lib/seed'
 
-export default function Workouts() {
+export default function Workouts({ query }) {
   const { state, update } = useStore()
   const { workouts, logs } = state
   const next = nextWorkout(state)
-  const [creating, setCreating] = useState(false)
+  const [creating, setCreating] = useState(query === 'novo')
   const [form, setForm] = useState({ name: '', focus: '', duration: '45–60 min' })
 
   const lastDone = (id) =>
@@ -38,6 +39,28 @@ export default function Workouts() {
   return (
     <div>
       <PageHeader title="Meus treinos" subtitle="Constância é o seu superpoder." onBack={() => go('/')} />
+
+      {workouts.length === 0 && (
+        <section className="card empty-card">
+          <div className="icon-tile">
+            <Icon name="dumbbell" size={26} strokeWidth={2.2} />
+          </div>
+          <h2 className="serif card-title">Nenhum treino ainda</h2>
+          <p className="muted">Crie o seu do zero ou comece com 3 treinos sugeridos (inferiores, superiores, glúteos e core) e ajuste como quiser.</p>
+          <button className="btn-primary" onClick={() => setCreating(true)}>
+            Montar meu primeiro treino <Icon name="arrowRight" size={18} />
+          </button>
+          <button
+            className="btn-secondary"
+            onClick={() => {
+              update(() => ({ workouts: seedWorkouts() }))
+              toast('Treinos sugeridos adicionados')
+            }}
+          >
+            Usar treinos sugeridos
+          </button>
+        </section>
+      )}
 
       <div className="list">
         {workouts.map((w) => {
@@ -85,7 +108,10 @@ export default function Workouts() {
                 <li key={l.id}>
                   <span className="legend-dot" />
                   <span>{fmtBR(l.date)}</span>
-                  <span className="muted">{w ? `${w.name} · ${w.focus}` : 'Treino removido'}</span>
+                  <span className="muted">
+                    {w ? [w.name, w.focus].filter(Boolean).join(' · ') : 'Treino removido'}
+                    {l.durationMin ? ` · ${l.durationMin} min` : ''}
+                  </span>
                 </li>
               )
             })}
