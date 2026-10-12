@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import Icon from '../components/Icon'
+import Icon3D from '../components/Icon3D'
 import { toast } from '../components/ui'
 import { supabase } from '../lib/supabase'
 import { authMessage, useAuth } from '../lib/auth'
@@ -71,7 +72,7 @@ export default function Login() {
       } else if (mode === 'newPassword') {
         const { error } = await supabase.auth.updateUser({ password })
         if (error) throw error
-        toast('Senha atualizada ♥')
+        toast('Senha atualizada')
         doneRecovering()
       }
     } catch (err) {
@@ -88,28 +89,42 @@ export default function Login() {
   return (
     <div className="login">
       <div className="login-brand">
-        <div className="brand">bibly</div>
-        <div className="brand-tag">YOUR PERSONAL WELLNESS SPACE</div>
-        <p className="login-welcome serif">Seu espaço, sua evolução ♡</p>
+        <div className="login-icons" aria-hidden="true">
+          <Icon3D name="dumbbell" size={44} />
+          <Icon3D name="flame" size={56} />
+          <Icon3D name="trophy" size={44} />
+        </div>
+        <div className="brand">
+          bibly<span className="brand-dot">.</span>
+        </div>
+        <p className="login-welcome">Seu espaço, sua evolução ♡</p>
       </div>
 
       <form className="card login-card form" onSubmit={submit} noValidate>
         <div className="login-head">
-          <h1 className="serif page-title">{title}</h1>
-          <p className="greet-sub">{subtitle}</p>
+          <h1>{title}</h1>
+          <p>{subtitle}</p>
         </div>
 
         {mode === 'signup' && (
-          <label>
+          <label className="field">
             Como quer ser chamada?
-            <input aria-invalid={invalid === 'name'} value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome" autoComplete="given-name" />
+            <input
+              className="input"
+              aria-invalid={invalid === 'name'}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Seu nome"
+              autoComplete="given-name"
+            />
           </label>
         )}
 
         {needsEmail && (
-          <label>
+          <label className="field">
             E-mail
             <input
+              className="input"
               type="email"
               aria-invalid={invalid === 'email'}
               inputMode="email"
@@ -124,9 +139,9 @@ export default function Login() {
         )}
 
         {needsPassword && (
-          <label>
+          <label className="field">
             {mode === 'newPassword' ? 'Nova senha' : 'Senha'}
-            <span className="password-field">
+            <span className="input-group">
               <input
                 type={showPassword ? 'text' : 'password'}
                 aria-invalid={invalid === 'password'}
@@ -139,9 +154,9 @@ export default function Login() {
               />
               <button
                 type="button"
-                className="password-toggle"
+                className="input-action"
                 onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
               >
                 {showPassword ? 'Ocultar' : 'Mostrar'}
               </button>
@@ -150,30 +165,38 @@ export default function Login() {
         )}
 
         {mode === 'login' && (
-          <button type="button" className="link-soft login-forgot" onClick={() => switchTo('reset')}>
+          <button type="button" className="link login-forgot" onClick={() => switchTo('reset')}>
             Esqueci minha senha
           </button>
         )}
 
         {error && (
-          <p className="login-error" role="alert">
+          <p className="alert alert-error" role="alert">
             {error}
           </p>
         )}
-        {notice && <p className="login-notice">{notice}</p>}
+        {notice && (
+          <p className="alert alert-info" role="status">
+            {notice}
+          </p>
+        )}
 
-        <button className="btn-primary" type="submit" disabled={busy}>
-          {busy
-            ? { login: 'Entrando…', signup: 'Criando conta…', reset: 'Enviando link…', newPassword: 'Salvando…' }[mode]
-            : { login: 'Entrar', signup: 'Criar conta', reset: 'Enviar link', newPassword: 'Salvar nova senha' }[mode]}
-          {!busy && <Icon name="arrowRight" size={18} />}
+        <button className="btn btn-primary btn-lg btn-block btn-cta" type="submit" disabled={busy}>
+          {busy ? (
+            <>
+              <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2.5, borderColor: 'rgba(255,255,255,.4)', borderTopColor: '#fff' }} />
+              {{ login: 'Entrando…', signup: 'Criando conta…', reset: 'Enviando link…', newPassword: 'Salvando…' }[mode]}
+            </>
+          ) : (
+            { login: 'Entrar', signup: 'Criar conta', reset: 'Enviar link', newPassword: 'Salvar nova senha' }[mode]
+          )}
         </button>
       </form>
 
       {mode === 'login' && (
         <p className="login-switch">
           Ainda não tem conta?{' '}
-          <button className="link-soft" onClick={() => switchTo('signup')}>
+          <button className="link" onClick={() => switchTo('signup')}>
             Criar conta
           </button>
         </p>
@@ -181,14 +204,14 @@ export default function Login() {
       {(mode === 'signup' || mode === 'reset') && (
         <p className="login-switch">
           Já tem conta?{' '}
-          <button className="link-soft" onClick={() => switchTo('login')}>
+          <button className="link" onClick={() => switchTo('login')}>
             Entrar
           </button>
         </p>
       )}
 
       <p className="private-note">
-        <Icon name="lock" size={14} /> Seus dados e fotos são privados
+        <Icon name="lock" size={13} /> Seus dados e fotos são privados
       </p>
     </div>
   )

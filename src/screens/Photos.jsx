@@ -1,18 +1,40 @@
 import { useRef, useState } from 'react'
 import Icon from '../components/Icon'
-import { PageHeader, Sheet, Thumb, toast } from '../components/ui'
+import Icon3D from '../components/Icon3D'
+import { Empty, PageHeader, Sheet, Thumb, toast } from '../components/ui'
 import { go } from '../lib/router'
 import { hashPin, useStore } from '../lib/store'
-import { MONTHS, fmtBR, monthKey, toKey, uid } from '../lib/dates'
+import { MONTHS, fromKey, toKey, uid } from '../lib/dates'
 import { compressImage, deletePhoto, putPhoto } from '../lib/photos'
 
 const POSES = ['Frente', 'Lateral', 'Costas']
 const UNLOCK_KEY = 'bibly:photos-unlocked'
+const FILTERS = [
+  { id: 'all', label: 'Tudo', days: null },
+  { id: '30', label: '30 dias', days: 30 },
+  { id: '90', label: '3 meses', days: 90 },
+  { id: '365', label: '12 meses', days: 365 },
+]
+
+const daysBetween = (a, b) => Math.round((fromKey(b) - fromKey(a)) / 86400000)
+const fmtDay = (k) => {
+  const d = fromKey(k)
+  return `${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3).toLowerCase()} ${d.getFullYear()}`
+}
+const ago = (k) => {
+  const n = daysBetween(k, toKey())
+  if (n <= 0) return 'hoje'
+  if (n === 1) return 'ontem'
+  if (n < 30) return `há ${n} dias`
+  const m = Math.round(n / 30)
+  return m === 1 ? 'há 1 mês' : `há ${m} meses`
+}
 
 export default function Photos() {
   const { state, update } = useStore()
   const [unlocked, setUnlocked] = useState(() => !state.pinHash || sessionStorage.getItem(UNLOCK_KEY) === '1')
-  const [month, setMonth] = useState(() => new Date())
+  const [tab, setTab] = useState('timeline')
+  const [filter, setFilter] = useState('all')
   const [adding, setAdding] = useState(false)
   const [menu, setMenu] = useState(null)
   const [viewing, setViewing] = useState(null)
@@ -38,94 +60,117 @@ export default function Photos() {
     )
   }
 
-  const mk = monthKey(month)
-  const items = state.photos
-    .filter((p) => p.date.startsWith(mk))
-    .sort((a, b) => b.date.localeCompare(a.date) || POSES.indexOf(a.pose) - POSES.indexOf(b.pose))
-
-  const shiftMonth = (n) => setMonth((m) => new Date(m.getFullYear(), m.getMonth() + n, 1))
+  const today = toKey()
+  const days = FILTERS.find((f) => f.id === filter).days
+  const photos = state.photos.filter((p) => !days || daysBetween(p.date, today) <= days)
+  const dates = [...new Set(photos.map((p) => p.date))].sort((a, b) => b.localeCompare(a))
 
   const remove = async (p) => {
-    if (!confirm('Excluir esta foto?')) return
+    if (!confirm('Excluir esta foto? Essa ação não pode ser desfeita.')) return
     await deletePhoto(p.id)
     update((s) => ({ photos: s.photos.filter((x) => x.id !== p.id) }))
     setMenu(null)
     toast('Foto excluída')
   }
 
+  const hasAny = state.photos.length > 0
+
   return (
-    <div>
+    <div className="stack">
       <PageHeader
         title="Minhas fotos"
-        subtitle={
-          <>
-            Sua evolução, só sua. <Icon name="heart" size={14} />
-          </>
-        }
-        onBack={() => go('/')}
+        subtitle="Sua evolução, só sua"
         right={
-          <button className="icon-btn" onClick={lock} aria-label="Trancar fotos">
-            <Icon name="lock" size={24} />
+          <button className="icon-btn icon-btn-surface" onClick={lock} aria-label="Trancar fotos">
+            <Icon name="lock" size={20} />
           </button>
         }
       />
 
-      <div className="month-nav">
-        <button className="icon-btn" onClick={() => shiftMonth(-1)} aria-label="Mês anterior">
-          <Icon name="chevronLeft" size={22} />
-        </button>
-        <div className="month-pill">
-          <Icon name="calendar" size={20} />
-          {MONTHS[month.getMonth()]} {month.getFullYear()}
-        </div>
-        <button className="icon-btn" onClick={() => shiftMonth(1)} aria-label="Próximo mês">
-          <Icon name="chevronRight" size={22} />
-        </button>
-      </div>
-
-      {items.length === 0 ? (
-        <div className="empty-state">
-          <Icon name="camera" size={28} />
-          <p>Nenhuma foto neste mês ainda.</p>
-          <small>Registre frente, lateral e costas para comparar sua evolução.</small>
-        </div>
-      ) : (
-        <div className="photo-grid">
-          {items.map((p) => (
-            <div key={p.id} className="photo-card">
-              <Thumb id={p.id} className="photo-img" onClick={() => setViewing(p)} alt={`${p.pose} em ${fmtBR(p.date)}`} />
-              <div className="photo-foot">
-                <div>
-                  <div className="photo-date">{fmtBR(p.date)}</div>
-                  <div className="photo-pose">{p.pose}</div>
-                </div>
-                <button className="icon-btn icon-btn-sm" onClick={() => setMenu(p)} aria-label="Opções da foto">
-                  <Icon name="more" size={18} strokeWidth={2.4} />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <button className="add-row add-row-pink" onClick={() => setAdding(true)}>
-        <span className="add-icon add-icon-strong">
-          <Icon name="camera" size={22} />
+      <button className="ph-cta" onClick={() => setAdding(true)}>
+        <Icon3D name="camera" size={46} />
+        <span className="row-text">
+          <strong>+ Adicionar foto</strong>
+          <small>Frente, lateral e costas</small>
         </span>
-        <span className="add-text">
-          <strong>Adicionar novas fotos</strong>
-          <small>Mantenha seu progresso registrado</small>
-        </span>
-        <Icon name="chevronRight" size={18} className="muted" />
+        <Icon name="chevronRight" size={20} />
       </button>
 
+      {!hasAny ? (
+        <section className="card">
+          <Empty
+            icon="photo"
+            title="Ainda não tem foto por aqui"
+            text="Registre sua evolução para acompanhar suas mudanças ao longo do tempo. Só você vê essas fotos."
+            action="Adicionar primeira foto"
+            onAction={() => setAdding(true)}
+          />
+        </section>
+      ) : (
+        <>
+          <div className="segmented" role="tablist">
+            <button role="tab" aria-selected={tab === 'timeline'} className={tab === 'timeline' ? 'on' : ''} onClick={() => setTab('timeline')}>
+              Linha do tempo
+            </button>
+            <button role="tab" aria-selected={tab === 'compare'} className={tab === 'compare' ? 'on' : ''} onClick={() => setTab('compare')}>
+              Comparar
+            </button>
+          </div>
+
+          {tab === 'timeline' ? (
+            <>
+              <div className="chips" role="group" aria-label="Filtrar por período">
+                {FILTERS.map((f) => (
+                  <button key={f.id} className={'chip' + (filter === f.id ? ' on' : '')} onClick={() => setFilter(f.id)} aria-pressed={filter === f.id}>
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+
+              {dates.length === 0 ? (
+                <div className="card">
+                  <Empty icon="calendar" title="Nada neste período" text="Escolha um período maior para ver suas fotos." />
+                </div>
+              ) : (
+                <div className="timeline">
+                  {dates.map((d) => {
+                    const items = photos.filter((p) => p.date === d).sort((a, b) => POSES.indexOf(a.pose) - POSES.indexOf(b.pose))
+                    return (
+                      <section key={d} className="tl-item">
+                        <div className="tl-head">
+                          <span className="tl-date">{fmtDay(d)}</span>
+                          <span className="tl-ago">{ago(d)}</span>
+                        </div>
+                        <div className="ph-grid">
+                          {items.map((p) => (
+                            <div key={p.id} className="ph-card">
+                              <Thumb id={p.id} className="ph-img" onClick={() => setViewing(p)} alt={`${p.pose} em ${fmtDay(p.date)}`} />
+                              <span className="ph-label">{p.pose}</span>
+                              <button className="ph-more" onClick={() => setMenu(p)} aria-label={`Opções da foto ${p.pose}`}>
+                                <Icon name="more" size={18} strokeWidth={2.4} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    )
+                  })}
+                </div>
+              )}
+            </>
+          ) : (
+            <Compare photos={state.photos} onView={setViewing} onAdd={() => setAdding(true)} />
+          )}
+        </>
+      )}
+
       <p className="private-note">
-        <Icon name="lock" size={14} /> Suas fotos são privadas
+        <Icon name="lock" size={13} /> Suas fotos são privadas
       </p>
 
-      <AddPhotosSheet open={adding} onClose={() => setAdding(false)} onSaved={(date) => setMonth(new Date(date + 'T12:00'))} />
+      <AddPhotosSheet open={adding} onClose={() => setAdding(false)} />
 
-      <Sheet open={!!menu} onClose={() => setMenu(null)} title={menu ? `${menu.pose} · ${fmtBR(menu.date)}` : ''}>
+      <Sheet open={!!menu} onClose={() => setMenu(null)} title={menu ? `${menu.pose} · ${fmtDay(menu.date)}` : ''}>
         {menu && (
           <div className="sheet-actions">
             {POSES.filter((p) => p !== menu.pose).map((pose) => (
@@ -138,7 +183,7 @@ export default function Photos() {
                   toast('Foto marcada como ' + pose)
                 }}
               >
-                Marcar como {pose}
+                <Icon name="edit" size={18} /> Marcar como {pose}
               </button>
             ))}
             <button className="sheet-action danger" onClick={() => remove(menu)}>
@@ -149,12 +194,12 @@ export default function Photos() {
       </Sheet>
 
       {viewing && (
-        <div className="viewer" onClick={() => setViewing(null)}>
-          <Thumb id={viewing.id} className="viewer-img" />
+        <div className="viewer" onClick={() => setViewing(null)} role="dialog" aria-label="Foto ampliada">
+          <Thumb id={viewing.id} className="viewer-img" alt={`${viewing.pose} em ${fmtDay(viewing.date)}`} />
           <div className="viewer-caption">
-            {viewing.pose} · {fmtBR(viewing.date)}
+            {viewing.pose} · {fmtDay(viewing.date)}
           </div>
-          <button className="viewer-close" aria-label="Fechar">
+          <button className="icon-btn viewer-close" aria-label="Fechar">
             <Icon name="x" size={26} />
           </button>
         </div>
@@ -163,7 +208,69 @@ export default function Photos() {
   )
 }
 
-function AddPhotosSheet({ open, onClose, onSaved }) {
+function Compare({ photos, onView, onAdd }) {
+  const [pose, setPose] = useState('Frente')
+  const ofPose = photos.filter((p) => p.pose === pose).sort((a, b) => a.date.localeCompare(b.date))
+  const dates = [...new Set(ofPose.map((p) => p.date))]
+  const [before, setBefore] = useState(null)
+  const [after, setAfter] = useState(null)
+  const b = dates.includes(before) ? before : dates[0]
+  const a = dates.includes(after) ? after : dates.at(-1)
+  const photoAt = (d) => ofPose.filter((p) => p.date === d).at(-1)
+
+  return (
+    <div className="stack">
+      <div className="chips" role="group" aria-label="Escolher pose">
+        {POSES.map((p) => (
+          <button key={p} className={'chip' + (pose === p ? ' on' : '')} onClick={() => setPose(p)} aria-pressed={pose === p}>
+            {p}
+          </button>
+        ))}
+      </div>
+
+      {dates.length < 2 ? (
+        <div className="card">
+          <Empty
+            icon="photo"
+            title="Falta uma foto para comparar"
+            text={`Você precisa de fotos de ${pose.toLowerCase()} em pelo menos duas datas diferentes.`}
+            action="Adicionar foto"
+            onAction={onAdd}
+          />
+        </div>
+      ) : (
+        <>
+          <div className="compare">
+            {[
+              ['Antes', b, setBefore],
+              ['Depois', a, setAfter],
+            ].map(([label, d, set]) => {
+              const p = photoAt(d)
+              return (
+                <div key={label} className="compare-col">
+                  <span className="compare-tag">{label}</span>
+                  <div className="ph-card">{p && <Thumb id={p.id} className="ph-img" onClick={() => onView(p)} alt={`${pose} em ${fmtDay(d)}`} />}</div>
+                  <select className="select" value={d} onChange={(e) => set(e.target.value)} aria-label={`Data da foto ${label.toLowerCase()}`}>
+                    {dates.map((x) => (
+                      <option key={x} value={x}>
+                        {fmtDay(x)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )
+            })}
+          </div>
+          <p className="compare-summary">
+            {daysBetween(b, a) === 0 ? 'Mesma data nas duas fotos' : `${Math.abs(daysBetween(b, a))} dias de evolução entre as fotos`}
+          </p>
+        </>
+      )}
+    </div>
+  )
+}
+
+function AddPhotosSheet({ open, onClose }) {
   const { update } = useStore()
   const [date, setDate] = useState(toKey())
   const [busy, setBusy] = useState(null)
@@ -178,9 +285,8 @@ function AddPhotosSheet({ open, onClose, onSaved }) {
       const id = uid()
       const uploaded = await putPhoto(id, blob)
       update((s) => ({ photos: [...s.photos, { id, date, pose, pending: !uploaded }] }))
-      if (!uploaded) toast('Foto salva no aparelho. Ela vai para a nuvem quando a conexão voltar.')
+      toast(uploaded ? `${pose} salva` : 'Foto salva no aparelho. Ela vai para a nuvem quando a conexão voltar.')
       setSaved((v) => ({ ...v, [pose]: true }))
-      onSaved(date)
     } catch (e) {
       toast(e.message || 'Não foi possível salvar a foto')
     } finally {
@@ -196,33 +302,39 @@ function AddPhotosSheet({ open, onClose, onSaved }) {
   return (
     <Sheet open={open} onClose={close} title="Novas fotos">
       <div className="form">
-        <label>
+        <label className="field">
           Data
-          <input type="date" value={date} max={toKey()} onChange={(e) => setDate(e.target.value || toKey())} />
+          <input className="input" type="date" value={date} max={toKey()} onChange={(e) => setDate(e.target.value || toKey())} />
         </label>
+        <div className="pose-slots">
+          {POSES.map((pose) => (
+            <button
+              key={pose}
+              className={'pose-slot' + (saved[pose] ? ' done' : '')}
+              onClick={() => inputs.current[pose]?.click()}
+              disabled={!!busy}
+              aria-label={saved[pose] ? `${pose}: salva` : `Adicionar foto de ${pose}`}
+            >
+              {busy === pose ? <span className="spinner" /> : saved[pose] ? <Icon3D name="check" size={38} /> : <Icon3D name="camera" size={38} />}
+              <span>{busy === pose ? 'Salvando…' : pose}</span>
+              <input
+                ref={(el) => (inputs.current[pose] = el)}
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={(e) => {
+                  pick(pose, e.target.files[0])
+                  e.target.value = ''
+                }}
+              />
+            </button>
+          ))}
+        </div>
+        <p className="sheet-hint">Dica: mesma luz, mesmo lugar e mesma roupa deixam a comparação mais fiel.</p>
+        <button className="btn btn-primary btn-lg btn-block" onClick={close}>
+          Pronto
+        </button>
       </div>
-      <div className="pose-slots">
-        {POSES.map((pose) => (
-          <button key={pose} className={'pose-slot' + (saved[pose] ? ' done' : '')} onClick={() => inputs.current[pose]?.click()} disabled={!!busy}>
-            <Icon name={saved[pose] ? 'check' : 'camera'} size={26} />
-            <span>{busy === pose ? 'Salvando…' : pose}</span>
-            <input
-              ref={(el) => (inputs.current[pose] = el)}
-              type="file"
-              accept="image/*"
-              hidden
-              onChange={(e) => {
-                pick(pose, e.target.files[0])
-                e.target.value = ''
-              }}
-            />
-          </button>
-        ))}
-      </div>
-      <p className="sheet-hint">Dica: mesma luz, mesmo lugar e mesma roupa deixam a comparação mais fiel.</p>
-      <button className="btn-primary" onClick={close}>
-        Pronto
-      </button>
     </Sheet>
   )
 }
@@ -240,6 +352,7 @@ function PinPad({ onUnlock }) {
       if ((await hashPin(next)) === state.pinHash) onUnlock()
       else {
         setError(true)
+        navigator.vibrate?.(120)
         setTimeout(() => setPin(''), 400)
       }
     }
@@ -247,10 +360,12 @@ function PinPad({ onUnlock }) {
 
   return (
     <div className="pin">
-      <Icon name="lock" size={34} className="pin-lock" />
-      <h1 className="serif page-title">Minhas fotos</h1>
-      <p className="page-subtitle">Digite seu PIN para ver suas fotos</p>
-      <div className={'pin-dots' + (error ? ' shake' : '')}>
+      <Icon3D name="lock" size={72} />
+      <h1 className="page-title" style={{ marginTop: 8 }}>
+        Minhas fotos
+      </h1>
+      <p className="page-sub">{error ? 'PIN incorreto. Tente de novo.' : 'Digite seu PIN para ver suas fotos'}</p>
+      <div className={'pin-dots' + (error ? ' shake' : '')} aria-label={`${pin.length} de 4 dígitos`}>
         {[0, 1, 2, 3].map((i) => (
           <span key={i} className={i < pin.length ? 'on' : ''} />
         ))}
@@ -260,7 +375,7 @@ function PinPad({ onUnlock }) {
           k === '' ? (
             <span key={i} />
           ) : (
-            <button key={i} onClick={() => (k === '⌫' ? setPin(pin.slice(0, -1)) : press(k))}>
+            <button key={i} onClick={() => (k === '⌫' ? setPin(pin.slice(0, -1)) : press(k))} aria-label={k === '⌫' ? 'Apagar' : k}>
               {k}
             </button>
           ),

@@ -123,7 +123,10 @@ export function StoreProvider({ user, children }) {
   if (uid && !synced && !cached.current) {
     return (
       <div className="splash">
-        <div className="brand">bibly</div>
+        <div className="brand">
+          bibly<span className="brand-dot">.</span>
+        </div>
+        <span className="spinner" aria-label="Carregando" />
         <p className="muted">Carregando seus dados…</p>
       </div>
     )

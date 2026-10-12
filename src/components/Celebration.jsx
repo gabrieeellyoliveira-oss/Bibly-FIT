@@ -93,7 +93,7 @@ export default function Celebration({ name, workoutName, durationMin, completed,
       <div className="celebration-card">
         <Icon3D name="trophy" size={88} />
         <span className="eyebrow">Treino concluído</span>
-        <h2 className="serif">Parabéns{name ? `, ${name}` : ''}!</h2>
+        <h2>Parabéns{name ? `, ${name}` : ''}!</h2>
         <p className="celebration-text">
           Você concluiu o <strong>{workoutName}</strong>. Cada treino te deixa mais forte.
         </p>

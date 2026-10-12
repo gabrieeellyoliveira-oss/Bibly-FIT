@@ -140,6 +140,12 @@ export default function Execution({ workout, session, update, onMinimize, onFini
             ))}
           </div>
 
+          {cur.rest && (
+            <p className="exec-rest-note">
+              <Icon name="clock" size={14} /> Descanso de {cur.rest} entre as séries
+            </p>
+          )}
+
           <div className="exec-facts">
             <div className="exec-fact">
               <strong>

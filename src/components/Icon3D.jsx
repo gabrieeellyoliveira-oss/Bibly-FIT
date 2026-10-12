@@ -135,8 +135,8 @@ const SHAPES = {
   ),
   kettlebell: (f) => (
     <>
-      <path d="M21 28a11 11 0 0 1 22 0" fill="none" stroke={f('P')} strokeWidth="6.5" strokeLinecap="round" />
-      <circle cx="32" cy="38" r="17" fill={f('P')} />
+      <path d="M20 26V21a12 12 0 0 1 24 0v5" fill="none" stroke={f('N')} strokeWidth="6" strokeLinecap="round" />
+      <circle cx="32" cy="40" r="16" fill={f('P')} />
       <ellipse cx="25" cy="31" rx="5" ry="3" fill="#fff" opacity=".45" transform="rotate(-30 25 31)" />
     </>
   ),
