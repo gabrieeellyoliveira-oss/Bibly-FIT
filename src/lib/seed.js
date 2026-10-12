@@ -9,7 +9,7 @@ const ex = (name, sets, reps, rest = '60s') => ({
 export const seedWorkouts = () => [
   {
     id: 'A',
-    name: 'Treino A',
+    name: 'Queima & Pernas',
     focus: 'Inferiores',
     duration: '45–60 min',
     exercises: [
@@ -25,7 +25,7 @@ export const seedWorkouts = () => [
   },
   {
     id: 'B',
-    name: 'Treino B',
+    name: 'Define & Tonifica',
     focus: 'Superiores',
     duration: '40–50 min',
     exercises: [
@@ -40,7 +40,7 @@ export const seedWorkouts = () => [
   },
   {
     id: 'C',
-    name: 'Treino C',
+    name: 'Glúteo & Barriga Chapada',
     focus: 'Glúteos & core',
     duration: '45–55 min',
     exercises: [
@@ -54,3 +54,6 @@ export const seedWorkouts = () => [
     ],
   },
 ]
+
+// Nomes atuais dos treinos sugeridos (os antigos eram "Treino A/B/C")
+export const WORKOUT_NAMES = { A: 'Queima & Pernas', B: 'Define & Tonifica', C: 'Glúteo & Barriga Chapada' }

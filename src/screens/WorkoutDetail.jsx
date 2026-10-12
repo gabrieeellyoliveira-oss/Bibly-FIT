@@ -167,7 +167,7 @@ export default function WorkoutDetail({ id, query }) {
 
         <div className="chips">
           <span className="chip">
-            <Icon name="dumbbell" size={15} /> {workout.exercises.length} exercícios
+            <Icon name="dumbbell" size={15} /> {workout.exercises.length} {workout.exercises.length === 1 ? "exercício" : "exercícios"}
           </span>
           {workout.duration && (
             <span className="chip">

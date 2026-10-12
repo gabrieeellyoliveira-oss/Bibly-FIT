@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { supabase } from './supabase'
+import { WORKOUT_NAMES } from './seed'
 import { localGet, setPhotoUser, uploadPhoto } from './photos'
 import { toast } from '../components/ui'
 
@@ -28,7 +29,14 @@ function readJson(key) {
   }
 }
 
-const withDefaults = (data) => ({ ...initialState(), ...(data || {}) })
+// Renomeia os treinos sugeridos que ainda estão com o nome antigo ("Treino A/B/C")
+const renameSuggested = (workouts) =>
+  workouts.map((w) => (WORKOUT_NAMES[w.id] && w.name === 'Treino ' + w.id ? { ...w, name: WORKOUT_NAMES[w.id] } : w))
+
+const withDefaults = (data) => {
+  const s = { ...initialState(), ...(data || {}) }
+  return { ...s, workouts: renameSuggested(s.workouts) }
+}
 
 // Envia fotos que ficaram só no aparelho (sem internet na hora, ou vindas do modo local)
 async function flushPendingPhotos(photos, update) {

@@ -76,7 +76,7 @@ export default function Workouts({ query }) {
                 </div>
                 <div className="list-sub">{w.focus}</div>
                 <div className="list-meta">
-                  {w.exercises.length} exercícios · {w.duration}
+                  {w.exercises.length} {w.exercises.length === 1 ? "exercício" : "exercícios"} · {w.duration}
                   {last && <> · feito em {fmtBR(last).slice(0, 5)}</>}
                 </div>
               </div>

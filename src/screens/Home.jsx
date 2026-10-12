@@ -86,7 +86,7 @@ export default function Home() {
               <h2 className="serif card-title">{workout.name}</h2>
               <div className="workout-meta">
                 {workout.focus && <>{workout.focus} · </>}
-                {workout.exercises.length} exercícios · {workout.duration}
+                {workout.exercises.length} {workout.exercises.length === 1 ? "exercício" : "exercícios"} · {workout.duration}
               </div>
             </div>
             <Icon name="chevronRight" size={18} className="muted" />
