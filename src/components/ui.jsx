@@ -1,31 +1,38 @@
 import { useEffect, useState } from 'react'
 import Icon from './Icon'
+import Icon3D from './Icon3D'
 import { getPhoto } from '../lib/photos'
 
-export function Ring({ value, label, sub }) {
-  const r = 32
+const RING_COLORS = {
+  primary: ['#6C47FF', '#F2EEFF'],
+  coral: ['#FF6F5B', '#FFF0EC'],
+  peach: ['#F0955F', '#FFF5EE'],
+}
+
+export function Ring({ value, size = 64, color = 'primary', children }) {
+  const r = 26
   const c = 2 * Math.PI * r
-  const pct = Math.max(0, Math.min(1, value))
+  const pct = Math.max(0, Math.min(1, value || 0))
+  const [stroke, track] = RING_COLORS[color] || RING_COLORS.primary
   return (
-    <div className="ring">
-      <svg width="80" height="80" viewBox="0 0 80 80">
-        <circle cx="40" cy="40" r={r} className="ring-track" />
-        <circle
-          cx="40"
-          cy="40"
-          r={r}
-          className="ring-bar"
-          strokeDasharray={c}
-          strokeDashoffset={c * (1 - pct)}
-          transform="rotate(-90 40 40)"
-        />
-        <text x="40" y="45" textAnchor="middle" className="ring-text">
+    <svg width={size} height={size} viewBox="0 0 64 64" role="img" aria-label={`${Math.round(pct * 100)}%`}>
+      <circle cx="32" cy="32" r={r} className="ring-track" stroke={track} />
+      <circle
+        cx="32"
+        cy="32"
+        r={r}
+        className="ring-bar"
+        stroke={stroke}
+        strokeDasharray={c}
+        strokeDashoffset={c * (1 - pct)}
+        transform="rotate(-90 32 32)"
+      />
+      {children ?? (
+        <text x="32" y="37" textAnchor="middle" className="ring-text">
           {Math.round(pct * 100)}%
         </text>
-      </svg>
-      <div className="ring-label">{label}</div>
-      <div className="ring-sub">{sub}</div>
-    </div>
+      )}
+    </svg>
   )
 }
 
@@ -39,7 +46,7 @@ export function Sheet({ open, onClose, title, children }) {
   if (!open) return null
   return (
     <div className="sheet-backdrop" onClick={onClose}>
-      <div className="sheet" onClick={(e) => e.stopPropagation()} role="dialog" aria-label={title}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={title}>
         <div className="sheet-handle" />
         {title && <h3 className="sheet-title">{title}</h3>}
         {children}
@@ -50,20 +57,46 @@ export function Sheet({ open, onClose, title, children }) {
 
 export function PageHeader({ title, subtitle, onBack, right }) {
   return (
-    <header className="page-header">
-      <div className="page-header-row">
-        {onBack ? (
-          <button className="icon-btn" onClick={onBack} aria-label="Voltar">
-            <Icon name="chevronLeft" size={26} />
-          </button>
-        ) : (
-          <span className="icon-btn-spacer" />
-        )}
-        <h1 className="serif page-title">{title}</h1>
-        {right || <span className="icon-btn-spacer" />}
+    <header className="page-head">
+      {onBack && (
+        <button className="icon-btn icon-btn-surface" onClick={onBack} aria-label="Voltar">
+          <Icon name="chevronLeft" size={22} />
+        </button>
+      )}
+      <div className="page-head-text">
+        <h1 className="page-title">{title}</h1>
+        {subtitle && <p className="page-sub">{subtitle}</p>}
       </div>
-      {subtitle && <p className="page-subtitle">{subtitle}</p>}
+      {right}
     </header>
+  )
+}
+
+export function SectionHead({ title, action, onAction }) {
+  return (
+    <div className="section-head">
+      <h2 className="section-title">{title}</h2>
+      {action && (
+        <button className="section-link" onClick={onAction}>
+          {action} <Icon name="chevronRight" size={16} />
+        </button>
+      )}
+    </div>
+  )
+}
+
+export function Empty({ icon, title, text, action, onAction }) {
+  return (
+    <div className="empty">
+      {icon && <Icon3D name={icon} size={72} />}
+      <p className="empty-title">{title}</p>
+      {text && <p className="empty-text">{text}</p>}
+      {action && (
+        <button className="btn btn-primary" onClick={onAction}>
+          {action}
+        </button>
+      )}
+    </div>
   )
 }
 
@@ -96,10 +129,12 @@ export function toast(msg) {
   if (!el) {
     el = document.createElement('div')
     el.id = 'toast'
+    el.setAttribute('role', 'status')
+    el.setAttribute('aria-live', 'polite')
     document.body.appendChild(el)
   }
   el.textContent = msg
   el.classList.add('show')
   clearTimeout(toastTimer)
-  toastTimer = setTimeout(() => el.classList.remove('show'), 2200)
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2400)
 }

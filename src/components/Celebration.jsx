@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react'
 import Icon from './Icon'
+import Icon3D from './Icon3D'
 
-const COLORS = ['#E9958D', '#E5C5CE', '#F7E8EB', '#D9786F', '#E8C77F', '#FFFDFB', '#A58D89']
+const COLORS = ['#6C47FF', '#8A6BFF', '#B9A8FF', '#FF6F5B', '#FFB38A', '#F5B83D', '#F59BB0']
 
 // Confetes desenhados num canvas (sem biblioteca), caindo por ~4 segundos
 function useConfetti(canvasRef) {
@@ -90,12 +91,11 @@ export default function Celebration({ name, workoutName, durationMin, completed,
     <div className="celebration" role="dialog" aria-label="Parabéns">
       <canvas ref={canvasRef} className="confetti" aria-hidden="true" />
       <div className="celebration-card">
-        <div className="celebration-badge">
-          <Icon name="check" size={30} strokeWidth={2.6} />
-        </div>
+        <Icon3D name="trophy" size={88} />
+        <span className="eyebrow">Treino concluído</span>
         <h2 className="serif">Parabéns{name ? `, ${name}` : ''}!</h2>
         <p className="celebration-text">
-          Você concluiu o <strong>{workoutName}</strong>. Cada treino conta. ♥
+          Você concluiu o <strong>{workoutName}</strong>. Cada treino te deixa mais forte.
         </p>
         <div className="chips chips-center">
           <span className="chip">
@@ -105,7 +105,7 @@ export default function Celebration({ name, workoutName, durationMin, completed,
             <Icon name="dumbbell" size={15} /> {completed}/{total} exercícios
           </span>
         </div>
-        <button className="btn-primary" onClick={onClose}>
+        <button className="btn btn-primary btn-lg btn-block" onClick={onClose}>
           Voltar ao início <Icon name="arrowRight" size={18} />
         </button>
       </div>

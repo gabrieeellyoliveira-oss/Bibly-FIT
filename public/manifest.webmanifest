@@ -3,8 +3,8 @@
   "short_name": "Bibly",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FCF5F5",
-  "theme_color": "#FCF5F5",
+  "background_color": "#FAF7F2",
+  "theme_color": "#FAF7F2",
   "icons": [
     { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
     { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },

@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import Icon from '../components/Icon'
-import { Ring, Sheet, toast } from '../components/ui'
+import Icon3D from '../components/Icon3D'
+import { Ring, SectionHead, Sheet, toast } from '../components/ui'
 import { go } from '../lib/router'
-import { WorkoutThumb } from './Workouts'
 import { nextWorkout, useStore } from '../lib/store'
+import { imageUrl, workoutCover } from '../lib/exerciseImages'
+import { achievements } from '../lib/progress'
 import { DOW_LETTERS, MONTHS, addDays, daysInMonth, fmtLong, monthKey, toKey, uid, weekDays } from '../lib/dates'
 
 const MEASURE_FIELDS = [
@@ -15,6 +17,7 @@ const MEASURE_FIELDS = [
 ]
 
 const minutesSince = (t) => Math.max(0, Math.round((Date.now() - t) / 60000))
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`
 
 export default function Home() {
   const { state } = useStore()
@@ -30,115 +33,158 @@ export default function Home() {
   }, [session])
 
   const trainedDays = new Set(logs.map((l) => l.date))
-  const weekCount = weekDays().map(toKey).filter((k) => trainedDays.has(k)).length
+  const weekKeys = weekDays().map(toKey)
+  const weekCount = weekKeys.filter((k) => trainedDays.has(k)).length
+  const goal = profile.weeklyGoal
 
   const doneToday = logs.find((l) => l.date === today)
   const sessionWorkout = session && workouts.find((w) => w.id === session.workoutId)
   const workout = sessionWorkout || nextWorkout(state)
+  const cover = workout && imageUrl(workoutCover(workout), true)
 
-  // Minha evolução (mês atual), sempre calculada a partir dos registros
+  // Minha evolução (mês atual), calculada a partir dos registros
   const mk = monthKey()
   const monthTrained = new Set(logs.filter((l) => l.date.startsWith(mk)).map((l) => l.date)).size
-  const monthGoal = Math.max(1, Math.round((profile.weeklyGoal * daysInMonth()) / 7))
+  const monthGoal = Math.max(1, Math.round((goal * daysInMonth()) / 7))
   const lastMeasure = [...measures].filter((m) => m.date.startsWith(mk)).sort((a, b) => a.date.localeCompare(b.date)).at(-1)
   const measuresFilled = lastMeasure ? MEASURE_FIELDS.filter(([f]) => lastMeasure[f] !== '' && lastMeasure[f] != null).length : 0
   const monthPhotos = photos.filter((p) => p.date.startsWith(mk)).length
   const photoGoal = Math.max(1, profile.photoGoal)
 
+  const { list: achv, streak } = achievements(state)
+  const lastAchv = achv.filter((a) => a.unlocked).at(-1)
+
   return (
-    <div className="home">
-      <section className="greet-row">
-        <div className="greet">
-          <h1 className="serif greet-title">Oi, {profile.name || 'linda'}</h1>
+    <div className="stack">
+      <header className="home-top">
+        <div>
+          <h1 className="greet-title">Oi, {profile.name || 'linda'}</h1>
           <p className="greet-sub">
             Disciplina hoje,
             <br />
             resultados amanhã.
           </p>
         </div>
-        <div className="greet-side">
-          <button className="icon-btn icon-btn-sm settings-btn" onClick={() => go('/perfil')} aria-label="Configurações">
-            <Icon name="settings" size={20} />
-          </button>
-          <button className="streak" onClick={() => go('/treinos')} aria-label="Treinos da semana">
-          <Icon name="flame" fill size={20} className="streak-flame" />
-          <div className="streak-body">
-            <div className="streak-num">
-              {weekCount} / {profile.weeklyGoal}
+        <button className="avatar-btn" onClick={() => go('/perfil')} aria-label="Abrir perfil">
+          {(profile.name || 'B').slice(0, 1).toUpperCase()}
+        </button>
+      </header>
+
+      <section className="stat-strip">
+        <button className="week-goal card-press" onClick={() => go('/treinos')} aria-label="Treinos da semana">
+          <Icon3D name="calendar" size={38} />
+          <div>
+            <div className="week-goal-num">
+              {weekCount} <small>/ {goal}</small>
             </div>
-            <div className="streak-label">
-              dias de treino
-              <br />
-              esta semana
+            <div className="week-goal-label">dias de treino esta semana</div>
+            <div className="week-dots" aria-hidden="true">
+              {Array.from({ length: goal }, (_, i) => (
+                <i key={i} className={i < weekCount ? 'on' : ''} />
+              ))}
             </div>
           </div>
-          <Icon name="chevronRight" size={16} className="muted" />
-          </button>
+        </button>
+        <div className="streak-pill" aria-label={`${streak} dias seguidos`}>
+          <Icon3D name="flame" size={30} />
+          <strong>{streak}</strong>
+          <span>{streak === 1 ? 'dia seguido' : 'dias seguidos'}</span>
         </div>
       </section>
 
       {workout ? (
-        <section className="card card-pink workout-card">
-          <button className="workout-head" onClick={() => go('/treinos/' + workout.id)}>
-            <WorkoutThumb workout={workout} size="lg" />
-            <div className="workout-info">
-              <div className="eyebrow">{sessionWorkout ? 'Treino em andamento' : doneToday ? 'Próximo treino' : 'Treino de hoje'}</div>
-              <h2 className="serif card-title">{workout.name}</h2>
-              <div className="workout-meta">
-                {workout.focus && <>{workout.focus} · </>}
-                {workout.exercises.length} {workout.exercises.length === 1 ? "exercício" : "exercícios"} · {workout.duration}
+        <section className="today">
+          <button className="today-main" onClick={() => go('/treinos/' + workout.id)}>
+            <div className="today-info">
+              <span className="eyebrow">{sessionWorkout ? 'Treino em andamento' : doneToday ? 'Próximo treino' : 'Treino de hoje'}</span>
+              <h2 className="today-title">{workout.name}</h2>
+              <div className="today-meta">
+                {workout.focus && <span>{workout.focus}</span>}
+                <span>
+                  <Icon name="dumbbell" size={14} /> {plural(workout.exercises.length, 'exercício', 'exercícios')}
+                </span>
+                {workout.duration && (
+                  <span>
+                    <Icon name="clock" size={14} /> {workout.duration}
+                  </span>
+                )}
               </div>
             </div>
-            <Icon name="chevronRight" size={18} className="muted" />
+            <div className="today-img">{cover ? <img src={cover} alt="" /> : null}</div>
           </button>
+
+          {doneToday && !sessionWorkout && (
+            <p className="today-done">
+              <Icon3D name="check" size={22} /> Treino de hoje concluído. Arrasou!
+            </p>
+          )}
+
           {sessionWorkout ? (
-            <button className="btn-primary" onClick={() => go('/treinos/' + workout.id)}>
-              Continuar treino · {minutesSince(session.startedAt)} min
-              <Icon name="arrowRight" size={18} />
+            <button className="btn btn-primary btn-lg btn-block btn-cta" onClick={() => go('/treinos/' + workout.id)}>
+              <Icon name="play" size={16} fill /> Continuar treino · {minutesSince(session.startedAt)} min
             </button>
           ) : (
-            <>
-              {doneToday && (
-                <p className="done-note">
-                  <Icon name="check" size={15} strokeWidth={2.4} /> Treino de hoje concluído. Arrasou!
-                </p>
-              )}
-              <button className={doneToday ? 'btn-secondary' : 'btn-primary'} onClick={() => go('/treinos/' + workout.id + '?comecar')}>
-                <Icon name="play" size={15} fill />
-                Começar treino
-              </button>
-            </>
+            <button
+              className={'btn btn-lg btn-block btn-cta ' + (doneToday ? 'btn-secondary' : 'btn-primary')}
+              onClick={() => go('/treinos/' + workout.id + '?comecar')}
+            >
+              <Icon name="play" size={16} fill /> Começar treino
+            </button>
           )}
         </section>
       ) : (
-        <section className="card card-pink empty-card">
-          <div className="icon-tile">
-            <Icon name="dumbbell" size={26} strokeWidth={2.2} />
+        <section className="today">
+          <div className="empty" style={{ padding: 0 }}>
+            <Icon3D name="dumbbell" size={72} />
+            <p className="empty-title">Hoje começa a sua rotina</p>
+            <p className="empty-text">Você ainda não tem treinos. Monte o seu ou comece com os sugeridos.</p>
           </div>
-          <h2 className="serif card-title">Vamos começar?</h2>
-          <p className="muted">Você ainda não tem nenhum treino. Monte o seu do jeito que preferir.</p>
-          <button className="btn-primary" onClick={() => go('/treinos?novo')}>
-            Montar meu primeiro treino <Icon name="arrowRight" size={18} />
+          <button className="btn btn-primary btn-lg btn-block btn-cta" onClick={() => go('/treinos?novo')}>
+            Montar meu primeiro treino
           </button>
         </section>
       )}
 
       <section className="card">
-        <button className="card-head" onClick={() => go('/perfil')}>
-          <h2 className="card-head-title">Minha evolução</h2>
-          <span className="card-head-aside">
-            {MONTHS[new Date().getMonth()]} <Icon name="chevronRight" size={16} className="muted" />
-          </span>
-        </button>
-        <div className="rings">
-          <Ring value={monthTrained / monthGoal} label="Treinos" sub={`${monthTrained} de ${monthGoal}`} />
-          <Ring value={measuresFilled / 5} label="Medidas" sub={`${measuresFilled} de 5`} />
-          <Ring value={monthPhotos / photoGoal} label="Fotos" sub={`${monthPhotos} de ${photoGoal}`} />
+        <SectionHead title="Minha evolução" action={MONTHS[new Date().getMonth()]} onAction={() => go('/evolucao')} />
+        <div className="metrics">
+          <button className="metric" onClick={() => go('/evolucao')}>
+            <Ring value={monthTrained / monthGoal} color="primary" />
+            <span className="metric-label">Treinos</span>
+            <span className="metric-sub">
+              {monthTrained} de {monthGoal}
+            </span>
+          </button>
+          <button className="metric" onClick={() => go('/evolucao')}>
+            <Ring value={measuresFilled / 5} color="coral" />
+            <span className="metric-label">Medidas</span>
+            <span className="metric-sub">{measuresFilled} de 5</span>
+          </button>
+          <button className="metric" onClick={() => go('/fotos')}>
+            <Ring value={monthPhotos / photoGoal} color="peach" />
+            <span className="metric-label">Fotos</span>
+            <span className="metric-sub">
+              {monthPhotos} de {photoGoal}
+            </span>
+          </button>
         </div>
         {monthTrained + measuresFilled + monthPhotos === 0 && (
-          <p className="hint">Conclua um treino, registre suas medidas ou adicione fotos para ver sua evolução do mês.</p>
+          <p className="hint" style={{ marginTop: 12 }}>
+            Conclua um treino, registre medidas ou adicione fotos para ver sua evolução do mês.
+          </p>
         )}
       </section>
+
+      {lastAchv && (
+        <button className="achv-banner card-press" onClick={() => go('/evolucao')}>
+          <Icon3D name={lastAchv.icon} size={40} />
+          <span className="row-text">
+            <strong>{lastAchv.title}</strong>
+            <small>{lastAchv.desc}</small>
+          </span>
+          <Icon name="chevronRight" size={18} className="row-chevron" />
+        </button>
+      )}
 
       <WeekCard />
     </div>
@@ -163,6 +209,7 @@ function WeekCard() {
     if (rest.has(k)) return 'rest'
     return k < today ? 'empty' : 'future'
   }
+  const statusLabel = { trained: 'treino feito', rest: 'descanso', empty: 'sem registro', future: '' }
 
   const shift = (n) => {
     const next = offset + n
@@ -170,12 +217,11 @@ function WeekCard() {
     setSelected(next === 0 ? today : toKey(weekDays(addDays(new Date(), next * 7))[0]))
   }
 
-  const first = days[0]
-  const last = days[6]
+  const mon = (d) => MONTHS[d.getMonth()].slice(0, 3).toLowerCase()
   const range =
-    first.getMonth() === last.getMonth()
-      ? `${first.getDate()}–${last.getDate()} ${MONTHS[first.getMonth()].slice(0, 3).toLowerCase()}`
-      : `${first.getDate()} ${MONTHS[first.getMonth()].slice(0, 3).toLowerCase()} – ${last.getDate()} ${MONTHS[last.getMonth()].slice(0, 3).toLowerCase()}`
+    days[0].getMonth() === days[6].getMonth()
+      ? `${days[0].getDate()}–${days[6].getDate()} ${mon(days[0])}`
+      : `${days[0].getDate()} ${mon(days[0])} – ${days[6].getDate()} ${mon(days[6])}`
 
   const dayLogs = logs.filter((l) => l.date === selected)
   const dayMeasure = measures.find((m) => m.date === selected)
@@ -184,9 +230,7 @@ function WeekCard() {
   const nothing = !dayLogs.length && !dayMeasure && !dayPhotos.length && !isRest
 
   const toggleRest = () => {
-    update((s) => ({
-      restDays: isRest ? s.restDays.filter((d) => d !== selected) : [...s.restDays, selected],
-    }))
+    update((s) => ({ restDays: isRest ? s.restDays.filter((d) => d !== selected) : [...s.restDays, selected] }))
     toast(isRest ? 'Descanso removido' : 'Dia marcado como descanso')
   }
 
@@ -202,13 +246,13 @@ function WeekCard() {
       restDays: s.restDays.filter((d) => d !== selected),
     }))
     setBackfill(false)
-    toast('Treino registrado ♥')
+    toast('Treino registrado')
   }
 
   return (
     <section className="card">
-      <div className="card-head">
-        <h2 className="card-head-title">Minha semana</h2>
+      <div className="section-head">
+        <h2 className="section-title">Minha semana</h2>
         <div className="week-nav">
           <button className="icon-btn icon-btn-sm" onClick={() => shift(-1)} aria-label="Semana anterior">
             <Icon name="chevronLeft" size={18} />
@@ -229,14 +273,14 @@ function WeekCard() {
               key={k}
               className={'week-day' + (k === selected ? ' selected' : '')}
               onClick={() => setSelected(k)}
-              aria-label={fmtLong(k)}
+              aria-label={`${fmtLong(k)}${statusLabel[st] ? ', ' + statusLabel[st] : ''}`}
               aria-pressed={k === selected}
             >
               <span className="week-letter">{DOW_LETTERS[i]}</span>
               <span className={`week-num day-${st}` + (k === today ? ' day-today' : '')}>
-                {st === 'rest' ? <Icon name="moon" size={14} /> : d.getDate()}
+                {st === 'rest' ? <Icon name="moon" size={15} /> : st === 'trained' ? <Icon name="check" size={16} strokeWidth={3} /> : d.getDate()}
               </span>
-              <span className={'week-today-dot' + (k === today ? ' on' : '')} />
+              <span className={'week-mark' + (k === today ? ' today' : '')}>{k === today ? 'hoje' : d.getDate()}</span>
             </button>
           )
         })}
@@ -257,34 +301,34 @@ function WeekCard() {
       <div className="day-panel">
         <div className="day-panel-title">{selected === today ? `Hoje · ${fmtLong(selected).split(', ')[1]}` : fmtLong(selected)}</div>
 
-        {nothing && <p className="hint">{selected > today ? 'Dia ainda não chegou.' : 'Nada registrado neste dia.'}</p>}
+        {nothing && (
+          <p className="hint" style={{ marginTop: 6 }}>
+            {selected > today ? 'Esse dia ainda não chegou.' : 'Nada registrado neste dia.'}
+          </p>
+        )}
 
         <ul className="day-items">
           {dayLogs.map((l) => {
             const w = workouts.find((x) => x.id === l.workoutId)
-            const name = w ? `${w.name}${w.focus ? ' · ' + w.focus : ''}` : 'Treino removido'
-            const details = [l.durationMin ? `${l.durationMin} min` : null, l.total ? `${l.completed}/${l.total} exercícios` : null].filter(Boolean)
+            const name = w ? w.name : 'Treino removido'
+            const details = [w?.focus, l.durationMin ? `${l.durationMin} min` : null, l.total ? `${l.completed}/${l.total} exercícios` : null].filter(Boolean)
             return (
               <li key={l.id}>
-                <span className="day-icon">
-                  <Icon name="dumbbell" size={16} strokeWidth={2} />
-                </span>
-                <span className="day-text">
+                <Icon3D name="dumbbell" size={36} />
+                <span className="row-text">
                   <strong>{name}</strong>
                   {details.length > 0 && <small>{details.join(' · ')}</small>}
                 </span>
-                <button className="icon-btn icon-btn-sm" onClick={() => removeLog(l, w?.name || 'treino')} aria-label="Remover registro">
-                  <Icon name="trash" size={15} />
+                <button className="icon-btn icon-btn-sm" onClick={() => removeLog(l, name)} aria-label="Remover registro">
+                  <Icon name="trash" size={16} />
                 </button>
               </li>
             )
           })}
           {isRest && (
             <li>
-              <span className="day-icon">
-                <Icon name="moon" size={16} />
-              </span>
-              <span className="day-text">
+              <Icon3D name="moon" size={36} />
+              <span className="row-text">
                 <strong>Dia de descanso</strong>
                 <small>Recuperar também é treino.</small>
               </span>
@@ -292,10 +336,8 @@ function WeekCard() {
           )}
           {dayMeasure && (
             <li>
-              <span className="day-icon">
-                <Icon name="ruler" size={16} />
-              </span>
-              <span className="day-text">
+              <Icon3D name="tape" size={36} />
+              <span className="row-text">
                 <strong>Medidas registradas</strong>
                 <small>
                   {MEASURE_FIELDS.filter(([f]) => dayMeasure[f] !== '' && dayMeasure[f] != null)
@@ -307,13 +349,9 @@ function WeekCard() {
           )}
           {dayPhotos.length > 0 && (
             <li>
-              <span className="day-icon">
-                <Icon name="image" size={16} />
-              </span>
-              <button className="day-text day-link" onClick={() => go('/fotos')}>
-                <strong>
-                  {dayPhotos.length} {dayPhotos.length === 1 ? 'foto' : 'fotos'}
-                </strong>
+              <Icon3D name="camera" size={36} />
+              <button className="row-text" style={{ textAlign: 'left' }} onClick={() => go('/fotos')}>
+                <strong>{plural(dayPhotos.length, 'foto', 'fotos')}</strong>
                 <small>{[...new Set(dayPhotos.map((p) => p.pose))].join(', ')}</small>
               </button>
             </li>
@@ -322,25 +360,30 @@ function WeekCard() {
 
         <div className="day-actions">
           {selected <= today && workouts.length > 0 && (
-            <button className="btn-small" onClick={() => setBackfill(true)}>
-              <Icon name="plus" size={14} /> Registrar treino
+            <button className="btn btn-secondary btn-sm" onClick={() => setBackfill(true)}>
+              <Icon name="plus" size={15} /> Registrar treino
             </button>
           )}
           {!dayLogs.length && (
-            <button className="btn-small btn-small-soft" onClick={toggleRest}>
-              <Icon name="moon" size={14} /> {isRest ? 'Remover descanso' : 'Marcar descanso'}
+            <button className="btn btn-outline btn-sm" onClick={toggleRest}>
+              <Icon name="moon" size={15} /> {isRest ? 'Remover descanso' : 'Marcar descanso'}
             </button>
           )}
         </div>
       </div>
 
       <Sheet open={backfill} onClose={() => setBackfill(false)} title="Qual treino você fez?">
-        <p className="sheet-hint">{fmtLong(selected)}</p>
+        <p className="sheet-hint" style={{ marginBottom: 12 }}>
+          {fmtLong(selected)}
+        </p>
         <div className="sheet-actions">
           {workouts.map((w) => (
             <button key={w.id} className="sheet-action" onClick={() => addLog(w.id)}>
-              {w.name}
-              {w.focus && <span className="muted"> · {w.focus}</span>}
+              <Icon3D name="dumbbell" size={30} />
+              <span className="row-text">
+                <span className="row-title">{w.name}</span>
+                {w.focus && <span className="row-sub">{w.focus}</span>}
+              </span>
             </button>
           ))}
         </div>

@@ -60,3 +60,11 @@ export function workoutCover(workout) {
   }
   return null
 }
+
+// Acento de cor discreto por categoria (mantém a identidade geral)
+export function workoutAccent(workout) {
+  const t = `${workout?.focus || ''} ${workout?.name || ''}`.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+  if (/gluteo|core|barriga|abdom/.test(t)) return 'peach'
+  if (/inferior|perna|queima/.test(t)) return 'coral'
+  return 'primary'
+}
