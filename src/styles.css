@@ -2292,3 +2292,80 @@ p {
   max-width: 100%;
   max-height: 100%;
 }
+
+/* Exercício atual na capa durante o treino */
+.hero-img {
+  animation: heroIn 0.35s ease;
+}
+
+@keyframes heroIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+.hero-now {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 46px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  text-align: center;
+  padding: 8px 14px;
+  border-radius: 16px;
+  background: rgba(255, 253, 251, 0.92);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 4px 16px rgba(73, 51, 49, 0.1);
+  animation: heroIn 0.35s ease;
+}
+
+.hero-now strong {
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.hero-now-label {
+  font-size: 10.5px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--rose-strong);
+}
+
+.hero-now-meta {
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+.hero-now-done {
+  background: rgba(247, 232, 235, 0.95);
+}
+
+/* com a legenda, a imagem sobe para não ficar atrás dela */
+.detail-hero:has(.hero-now) img {
+  padding-bottom: 118px;
+}
+
+.ex-item-current {
+  box-shadow: 0 0 0 2px var(--coral), 0 4px 14px rgba(233, 149, 141, 0.18);
+}
+
+.ex-main .ex-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pill-now {
+  background: var(--coral);
+  color: #fff;
+  font-size: 10.5px;
+  padding: 1px 7px;
+}

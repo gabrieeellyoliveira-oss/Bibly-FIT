@@ -66,11 +66,14 @@ export default function WorkoutDetail({ id, query }) {
       toast('Toque em “Começar treino” para marcar os exercícios')
       return
     }
+    const marking = !checks.has(exId)
     update((s) => {
       const done = new Set(s.session.done)
       done.has(exId) ? done.delete(exId) : done.add(exId)
       return { session: { ...s.session, done: [...done] } }
     })
+    // Mostra a imagem do próximo exercício lá em cima
+    if (marking) setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 250)
   }
 
   const finish = () => {
@@ -142,7 +145,11 @@ export default function WorkoutDetail({ id, query }) {
   }
 
   const doneCount = workout.exercises.filter((e) => checks.has(e.id)).length
-  const cover = imageUrl(workoutCover(workout))
+  // Durante o treino, a capa mostra o exercício atual (o primeiro ainda não feito)
+  const current = session ? workout.exercises.find((e) => !checks.has(e.id)) : null
+  const currentIndex = current ? workout.exercises.indexOf(current) : -1
+  const allDone = session && workout.exercises.length > 0 && !current
+  const cover = imageUrl(current ? exerciseSlug(current) || workoutCover(workout) : workoutCover(workout))
   const totalSets = workout.exercises.reduce((n, e) => n + (parseInt(e.sets, 10) || 0), 0)
   const lastLog = [...state.logs]
     .filter((l) => l.workoutId === id)
@@ -152,7 +159,23 @@ export default function WorkoutDetail({ id, query }) {
   return (
     <div className="detail">
       <div className={'detail-hero' + (cover ? '' : ' detail-hero-empty')}>
-        {cover ? <img src={cover} alt="" /> : <Icon name="dumbbell" size={56} strokeWidth={1.6} />}
+        {cover ? <img key={cover} className="hero-img" src={cover} alt={current ? current.name : ''} /> : <Icon name="dumbbell" size={56} strokeWidth={1.6} />}
+        {current && (
+          <div className="hero-now">
+            <span className="hero-now-label">Agora · {currentIndex + 1} de {workout.exercises.length}</span>
+            <strong>{current.name}</strong>
+            <span className="hero-now-meta">
+              {current.sets} × {current.reps}
+              {current.rest && <> · descanso {current.rest}</>}
+            </span>
+          </div>
+        )}
+        {allDone && (
+          <div className="hero-now hero-now-done">
+            <strong>Todos os exercícios feitos!</strong>
+            <span className="hero-now-meta">Toque em Concluir treino ♥</span>
+          </div>
+        )}
         <button className="hero-btn hero-back" onClick={() => go('/treinos')} aria-label="Voltar">
           <Icon name="chevronLeft" size={22} />
         </button>
@@ -272,12 +295,15 @@ export default function WorkoutDetail({ id, query }) {
                 const done = checks.has(e.id)
                 return (
                   <li key={e.id}>
-                    <div className={'ex-item' + (done ? ' ex-item-done' : '')}>
+                    <div className={'ex-item' + (done ? ' ex-item-done' : '') + (current?.id === e.id ? ' ex-item-current' : '')}>
                       <button className="ex-thumb" onClick={() => setShowing(e)} aria-label={`Ver ${e.name}`}>
                         {thumb ? <img src={thumb} alt="" loading="lazy" /> : <span className="ex-thumb-num">{i + 1}</span>}
                       </button>
                       <button className="ex-main" onClick={() => (session ? toggle(e.id) : setShowing(e))}>
-                        <span className="ex-name">{e.name}</span>
+                        <span className="ex-name">
+                          {e.name}
+                          {current?.id === e.id && <span className="pill pill-now">agora</span>}
+                        </span>
                         <span className="ex-meta">
                           <Icon name="clock" size={13} /> {e.sets} × {e.reps}
                           {e.rest && <> · {e.rest}</>}
@@ -331,23 +357,27 @@ export default function WorkoutDetail({ id, query }) {
         </section>
 
         {editing ? (
-          <div className="detail-cta">
-            <button className="btn-primary" onClick={toggleEditing}>
-              Salvar treino <Icon name="check" size={18} />
-            </button>
+          <>
+            <div className="detail-cta">
+              <button className="btn-primary" onClick={toggleEditing}>
+                Salvar treino <Icon name="check" size={18} />
+              </button>
+            </div>
             <button className="btn-ghost-danger" onClick={removeWorkout}>
               Excluir treino
             </button>
-          </div>
+          </>
         ) : session ? (
-          <div className="detail-cta">
-            <button className="btn-primary" onClick={finish}>
-              Concluir treino <Icon name="check" size={18} />
-            </button>
+          <>
+            <div className="detail-cta">
+              <button className="btn-primary" onClick={finish}>
+                Concluir treino <Icon name="check" size={18} />
+              </button>
+            </div>
             <button className="btn-ghost-danger" onClick={cancel}>
               Cancelar treino
             </button>
-          </div>
+          </>
         ) : workout.exercises.length > 0 ? (
           <div className="detail-cta">
             {doneToday && (
