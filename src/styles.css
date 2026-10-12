@@ -1875,3 +1875,27 @@ p {
     max-width: 420px;
   }
 }
+
+/* Início sem logo: engrenagem acima do card da semana */
+.greet-row {
+  align-items: flex-start;
+  padding-top: 4px;
+}
+
+.greet {
+  padding-top: 14px;
+}
+
+.greet-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.settings-btn {
+  width: 34px;
+  height: 34px;
+  margin-right: -6px;
+}

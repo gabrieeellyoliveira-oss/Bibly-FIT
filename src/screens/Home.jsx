@@ -46,16 +46,6 @@ export default function Home() {
 
   return (
     <div className="home">
-      <header className="brand-row">
-        <div>
-          <div className="brand">bibly</div>
-          <div className="brand-tag">YOUR PERSONAL WELLNESS SPACE</div>
-        </div>
-        <button className="icon-btn" onClick={() => go('/perfil')} aria-label="Configurações">
-          <Icon name="settings" size={22} />
-        </button>
-      </header>
-
       <section className="greet-row">
         <div className="greet">
           <h1 className="serif greet-title">Oi, {profile.name || 'linda'}</h1>
@@ -65,7 +55,11 @@ export default function Home() {
             resultados amanhã.
           </p>
         </div>
-        <button className="streak" onClick={() => go('/treinos')} aria-label="Treinos da semana">
+        <div className="greet-side">
+          <button className="icon-btn icon-btn-sm settings-btn" onClick={() => go('/perfil')} aria-label="Configurações">
+            <Icon name="settings" size={20} />
+          </button>
+          <button className="streak" onClick={() => go('/treinos')} aria-label="Treinos da semana">
           <Icon name="flame" fill size={20} className="streak-flame" />
           <div className="streak-body">
             <div className="streak-num">
@@ -78,7 +72,8 @@ export default function Home() {
             </div>
           </div>
           <Icon name="chevronRight" size={16} className="muted" />
-        </button>
+          </button>
+        </div>
       </section>
 
       {workout ? (
