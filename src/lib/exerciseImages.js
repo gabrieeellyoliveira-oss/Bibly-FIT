@@ -20,6 +20,14 @@ const RULES = [
   [/triceps/, 'triceps-corda'],
   [/abducao/, 'gluteo-abducao-maquina'],
   [/coice|kickback/, 'gluteo-coice-polia'],
+  [/bulgaro/, 'pernas-agachamento-bulgaro'],
+  [/prancha/, 'core-prancha'],
+  [/perdigueiro|bird dog/, 'core-perdigueiro'],
+  [/abdominal infra|elevacao de pernas|power tower|cadeira do capitao/, 'core-abdominal-infra'],
+  [/abdominal|crunch/, 'core-abdominal'],
+  [/esteira|corrida|caminhada/, 'cardio-esteira'],
+  [/escada|stair/, 'cardio-escada'],
+  [/bicicleta|bike|ergometrica/, 'cardio-bicicleta'],
 ]
 
 const normalize = (s = '') =>
