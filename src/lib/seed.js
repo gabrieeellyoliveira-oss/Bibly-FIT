@@ -57,3 +57,6 @@ export const seedWorkouts = () => [
 
 // Nomes atuais dos treinos sugeridos (os antigos eram "Treino A/B/C")
 export const WORKOUT_NAMES = { A: 'Queima & Pernas', B: 'Define & Tonifica', C: 'Glúteo & Barriga Chapada' }
+
+// Capas dos treinos sugeridos (public/exercicios/<slug>.webp)
+export const WORKOUT_COVERS = { A: 'capa-queima-pernas', B: 'capa-define-tonifica', C: 'capa-gluteo-barriga' }

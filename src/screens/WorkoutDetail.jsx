@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import Icon from '../components/Icon'
+import Celebration from '../components/Celebration'
 import { PageHeader, Sheet, toast } from '../components/ui'
 import { go } from '../lib/router'
 import { useStore } from '../lib/store'
@@ -20,6 +21,7 @@ export default function WorkoutDetail({ id, query }) {
   const [editing, setEditing] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
   const [showing, setShowing] = useState(null)
+  const [celebrate, setCelebrate] = useState(null)
   const [, tick] = useState(0)
   const today = toKey()
   const session = state.session?.workoutId === id ? state.session : null
@@ -96,8 +98,8 @@ export default function WorkoutDetail({ id, query }) {
         },
       ],
     }))
-    toast(`Treino concluído em ${durationMin} min. Arrasou! ♥`)
-    go('/')
+    setCelebrate({ durationMin, completed, total: workout.exercises.length })
+    window.scrollTo({ top: 0 })
   }
 
   const cancel = () => {
@@ -395,6 +397,18 @@ export default function WorkoutDetail({ id, query }) {
           </div>
         ) : null}
       </div>
+
+      {celebrate && (
+        <Celebration
+          name={state.profile.name}
+          workoutName={workout.name}
+          {...celebrate}
+          onClose={() => {
+            setCelebrate(null)
+            go('/')
+          }}
+        />
+      )}
 
       <Sheet open={!!showing} onClose={() => setShowing(null)} title={showing?.name}>
         {showing && (

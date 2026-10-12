@@ -1,3 +1,5 @@
+import { WORKOUT_COVERS, WORKOUT_NAMES } from './seed'
+
 // Ilustrações dos exercícios (public/exercicios/<slug>.webp e <slug>-thumb.webp).
 // A imagem é escolhida pelo nome do exercício, então vale também para treinos já salvos.
 // A ordem importa: regras mais específicas primeiro.
@@ -47,9 +49,11 @@ export function exerciseSlug(exercise) {
 
 export const imageUrl = (slug, thumb = false) => (slug ? `/exercicios/${slug}${thumb ? '-thumb' : ''}.webp` : null)
 
-// Imagem de capa do treino: a escolhida no treino ou a do primeiro exercício com ilustração
+// Imagem de capa do treino: a escolhida no treino, a capa própria dos treinos sugeridos
+// ou a do primeiro exercício com ilustração
 export function workoutCover(workout) {
   if (workout?.image) return workout.image
+  if (WORKOUT_COVERS[workout?.id] && workout.name === WORKOUT_NAMES[workout.id]) return WORKOUT_COVERS[workout.id]
   for (const e of workout?.exercises || []) {
     const slug = exerciseSlug(e)
     if (slug) return slug
