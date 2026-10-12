@@ -1,42 +1,124 @@
-import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { seedWorkouts } from './seed'
+import { supabase } from './supabase'
+import { localGet, setPhotoUser, uploadPhoto } from './photos'
+import { toast } from '../components/ui'
 
-const KEY = 'bibly:v1'
+const LOCAL_KEY = 'bibly:v1' // modo local (sem login)
+const MIGRATED_KEY = 'bibly:migrated-to' // dados do modo local já enviados para esta conta
+const cacheKey = (uid) => (uid ? `${LOCAL_KEY}:${uid}` : LOCAL_KEY)
 
 const initialState = () => ({
   version: 1,
-  profile: { name: 'Bibi', weeklyGoal: 5, photoGoal: 6 },
+  profile: { name: '', weeklyGoal: 5, photoGoal: 6 },
   workouts: seedWorkouts(),
   logs: [], // { id, date: 'YYYY-MM-DD', workoutId }
   measures: [], // { id, date, weight, waist, hip, thigh, arm }
-  photos: [], // { id, date, pose } — a imagem fica no IndexedDB
+  photos: [], // { id, date, pose, pending? } — a imagem fica no IndexedDB / Storage
   pinHash: null,
 })
 
-function load() {
+function readJson(key) {
   try {
-    const raw = localStorage.getItem(KEY)
-    if (raw) return { ...initialState(), ...JSON.parse(raw) }
+    const raw = localStorage.getItem(key)
+    return raw ? JSON.parse(raw) : null
   } catch {
-    /* ignora dados corrompidos */
+    return null
   }
-  return initialState()
+}
+
+const withDefaults = (data) => ({ ...initialState(), ...(data || {}) })
+
+// Envia fotos que ficaram só no aparelho (sem internet na hora, ou vindas do modo local)
+async function flushPendingPhotos(photos, update) {
+  for (const p of photos) {
+    const blob = await localGet(p.id).catch(() => null)
+    if (blob && (await uploadPhoto(p.id, blob))) {
+      update((s) => ({ photos: s.photos.map((x) => (x.id === p.id ? { ...x, pending: false } : x)) }))
+    }
+  }
 }
 
 const StoreContext = createContext(null)
 
-export function StoreProvider({ children }) {
-  const [state, setState] = useState(load)
+export function StoreProvider({ user, children }) {
+  const uid = user?.id ?? null
+  const cached = useRef(readJson(cacheKey(uid)))
+  const [state, setState] = useState(() => withDefaults(cached.current))
+  const [synced, setSynced] = useState(!uid) // nuvem carregada: só então salvamos lá
+  const warned = useRef(false)
+  const userRef = useRef(user)
+  userRef.current = user
 
+  const update = useCallback((fn) => setState((s) => ({ ...s, ...fn(s) })), [])
+
+  // Ao entrar: busca os dados da conta; se a conta é nova, leva os dados deste aparelho
+  useEffect(() => {
+    setPhotoUser(uid)
+    if (!uid) return
+    let alive = true
+    ;(async () => {
+      const { data, error } = await supabase.from('app_state').select('data').eq('user_id', uid).maybeSingle()
+      if (!alive) return
+      if (error) {
+        toast('Sem conexão com a nuvem. Mostrando a cópia do aparelho.')
+        return
+      }
+      let next
+      if (data) {
+        next = withDefaults(data.data)
+      } else {
+        const legacy = localStorage.getItem(MIGRATED_KEY) ? null : readJson(LOCAL_KEY)
+        next = withDefaults(cached.current || legacy)
+        if (!cached.current && legacy) next.photos = next.photos.map((p) => ({ ...p, pending: true }))
+        if (!next.profile.name && userRef.current?.user_metadata?.name)
+          next.profile = { ...next.profile, name: userRef.current.user_metadata.name }
+        const { error: e } = await supabase.from('app_state').upsert({ user_id: uid, data: next })
+        if (!alive) return
+        if (e) {
+          toast('Não foi possível salvar na nuvem agora.')
+          return
+        }
+        localStorage.setItem(MIGRATED_KEY, uid)
+      }
+      setState(next)
+      setSynced(true)
+      const pending = next.photos.filter((p) => p.pending)
+      if (pending.length) flushPendingPhotos(pending, update)
+    })()
+    return () => {
+      alive = false
+    }
+  }, [uid, update])
+
+  // Salva no aparelho sempre e, com login, na nuvem (agrupando mudanças rápidas)
   useEffect(() => {
     try {
-      localStorage.setItem(KEY, JSON.stringify(state))
+      localStorage.setItem(cacheKey(uid), JSON.stringify(state))
     } catch {
       /* armazenamento cheio ou bloqueado */
     }
-  }, [state])
+    if (!uid || !synced) return
+    const t = setTimeout(async () => {
+      const { error } = await supabase
+        .from('app_state')
+        .upsert({ user_id: uid, data: state, updated_at: new Date().toISOString() })
+      if (error && !warned.current) {
+        warned.current = true
+        toast('Não consegui salvar na nuvem. Tento de novo na próxima mudança.')
+      } else if (!error) warned.current = false
+    }, 700)
+    return () => clearTimeout(t)
+  }, [state, uid, synced])
 
-  const update = useCallback((fn) => setState((s) => ({ ...s, ...fn(s) })), [])
+  if (uid && !synced && !cached.current) {
+    return (
+      <div className="splash">
+        <div className="brand">bibly</div>
+        <p className="muted">Carregando seus dados…</p>
+      </div>
+    )
+  }
 
   return <StoreContext.Provider value={{ state, update }}>{children}</StoreContext.Provider>
 }

@@ -3,6 +3,8 @@ import Icon from '../components/Icon'
 import { PageHeader, toast } from '../components/ui'
 import { go } from '../lib/router'
 import { hashPin, useStore } from '../lib/store'
+import { useAuth } from '../lib/auth'
+import { supabase } from '../lib/supabase'
 import { fmtBR, toKey, uid } from '../lib/dates'
 
 const FIELDS = [
@@ -15,6 +17,7 @@ const FIELDS = [
 
 export default function Profile() {
   const { state, update } = useStore()
+  const { user } = useAuth()
   const { profile, measures } = state
   const today = toKey()
   const todays = measures.find((m) => m.date === today)
@@ -139,7 +142,25 @@ export default function Profile() {
         )}
       </section>
 
-      <p className="private-note">Seus dados ficam salvos neste aparelho.</p>
+      {user ? (
+        <section className="card">
+          <h2 className="card-head-title">Minha conta</h2>
+          <div className="row-between">
+            <span className="muted account-email">{user.email}</span>
+            <button
+              className="btn-small"
+              onClick={() => {
+                sessionStorage.removeItem('bibly:photos-unlocked')
+                supabase.auth.signOut()
+              }}
+            >
+              Sair
+            </button>
+          </div>
+        </section>
+      ) : (
+        <p className="private-note">Seus dados ficam salvos neste aparelho.</p>
+      )}
     </div>
   )
 }

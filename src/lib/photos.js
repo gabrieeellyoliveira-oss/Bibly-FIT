@@ -1,6 +1,15 @@
-// Fotos ficam no IndexedDB do aparelho (cabem bem mais que no localStorage)
+import { supabase } from './supabase'
+
+// Fotos ficam no IndexedDB do aparelho (cache) e, com login, também no Supabase Storage
 const DB = 'bibly-photos'
 const STORE = 'photos'
+const BUCKET = 'photos'
+
+let cloudUser = null
+export const setPhotoUser = (uid) => {
+  cloudUser = supabase && uid ? uid : null
+}
+const cloudPath = (id) => `${cloudUser}/${id}.jpg`
 
 let dbPromise
 function openDb() {
@@ -23,9 +32,38 @@ async function run(mode, fn) {
   })
 }
 
-export const putPhoto = (id, blob) => run('readwrite', (s) => s.put(blob, id))
-export const getPhoto = (id) => run('readonly', (s) => s.get(id))
-export const deletePhoto = (id) => run('readwrite', (s) => s.delete(id))
+const localPut = (id, blob) => run('readwrite', (s) => s.put(blob, id))
+export const localGet = (id) => run('readonly', (s) => s.get(id))
+const localDelete = (id) => run('readwrite', (s) => s.delete(id))
+
+// Envia para a nuvem; retorna false se não conseguiu (fica pendente no aparelho)
+export async function uploadPhoto(id, blob) {
+  if (!cloudUser) return true
+  const { error } = await supabase.storage.from(BUCKET).upload(cloudPath(id), blob, {
+    contentType: 'image/jpeg',
+    upsert: true,
+  })
+  return !error
+}
+
+export async function putPhoto(id, blob) {
+  await localPut(id, blob)
+  return uploadPhoto(id, blob)
+}
+
+export async function getPhoto(id) {
+  const cached = await localGet(id)
+  if (cached || !cloudUser) return cached
+  const { data, error } = await supabase.storage.from(BUCKET).download(cloudPath(id))
+  if (error || !data) return null
+  await localPut(id, data)
+  return data
+}
+
+export async function deletePhoto(id) {
+  await localDelete(id)
+  if (cloudUser) await supabase.storage.from(BUCKET).remove([cloudPath(id)])
+}
 
 // Reduz a foto para no máximo 1400px e converte para JPEG
 export function compressImage(file, max = 1400, quality = 0.85) {

@@ -170,8 +170,9 @@ function AddPhotosSheet({ open, onClose, onSaved }) {
     try {
       const blob = await compressImage(file)
       const id = uid()
-      await putPhoto(id, blob)
-      update((s) => ({ photos: [...s.photos, { id, date, pose }] }))
+      const uploaded = await putPhoto(id, blob)
+      update((s) => ({ photos: [...s.photos, { id, date, pose, pending: !uploaded }] }))
+      if (!uploaded) toast('Foto salva no aparelho. Ela vai para a nuvem quando a conexão voltar.')
       setSaved((v) => ({ ...v, [pose]: true }))
       onSaved(date)
     } catch (e) {

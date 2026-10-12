@@ -1266,3 +1266,115 @@ p {
   opacity: 1;
   transform: translate(-50%, 0);
 }
+
+/* ---------- Login e carregamento ---------- */
+
+.splash {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.login {
+  max-width: 440px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  padding: calc(env(safe-area-inset-top) + 48px) 20px calc(env(safe-area-inset-bottom) + 28px);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.login-brand {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.login-brand .brand {
+  font-size: 60px;
+}
+
+.login-card {
+  padding: 24px 20px;
+}
+
+.login-head {
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.login-head .greet-sub {
+  margin-top: 6px;
+}
+
+.password-field {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 14px;
+  padding-right: 6px;
+}
+
+.password-field:focus-within {
+  border-color: var(--rose);
+}
+
+.form .password-field input {
+  border: 0;
+  flex: 1;
+}
+
+.password-toggle {
+  font-size: 13px;
+  color: var(--rose-strong);
+  padding: 8px 10px;
+}
+
+.link-soft {
+  color: var(--rose-strong);
+  font-weight: 500;
+}
+
+.login-forgot {
+  align-self: flex-end;
+  font-size: 13px;
+  margin-top: -4px;
+}
+
+.login-error,
+.login-notice {
+  font-size: 14px;
+  line-height: 1.4;
+  padding: 10px 14px;
+  border-radius: 14px;
+}
+
+.login-error {
+  background: #fbe4e1;
+  color: #a5463f;
+}
+
+.login-notice {
+  background: var(--pink-50);
+  color: var(--ink-2);
+}
+
+.btn-primary:disabled {
+  opacity: 0.7;
+}
+
+.login-switch {
+  text-align: center;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.account-email {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
