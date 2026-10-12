@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Icon from '../components/Icon'
 import { Ring, Sheet, toast } from '../components/ui'
 import { go } from '../lib/router'
+import { WorkoutThumb } from './Workouts'
 import { nextWorkout, useStore } from '../lib/store'
 import { DOW_LETTERS, MONTHS, addDays, daysInMonth, fmtLong, monthKey, toKey, uid, weekDays } from '../lib/dates'
 
@@ -79,9 +80,7 @@ export default function Home() {
       {workout ? (
         <section className="card card-pink workout-card">
           <button className="workout-head" onClick={() => go('/treinos/' + workout.id)}>
-            <div className="icon-tile">
-              <Icon name="dumbbell" size={26} strokeWidth={2.2} />
-            </div>
+            <WorkoutThumb workout={workout} size="lg" />
             <div className="workout-info">
               <div className="eyebrow">{sessionWorkout ? 'Treino em andamento' : doneToday ? 'Próximo treino' : 'Treino de hoje'}</div>
               <h2 className="serif card-title">{workout.name}</h2>

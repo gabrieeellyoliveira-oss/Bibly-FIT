@@ -5,6 +5,7 @@ import { go } from '../lib/router'
 import { nextWorkout, useStore } from '../lib/store'
 import { fmtBR } from '../lib/dates'
 import { seedWorkouts } from '../lib/seed'
+import { imageUrl, workoutCover } from '../lib/exerciseImages'
 
 export default function Workouts({ query }) {
   const { state, update } = useStore()
@@ -67,9 +68,7 @@ export default function Workouts({ query }) {
           const last = lastDone(w.id)
           return (
             <button key={w.id} className="card list-card" onClick={() => go('/treinos/' + w.id)}>
-              <div className={'icon-tile' + (next?.id === w.id ? '' : ' icon-tile-soft')}>
-                <Icon name="dumbbell" size={24} strokeWidth={2.4} />
-              </div>
+              <WorkoutThumb workout={w} />
               <div className="list-body">
                 <div className="list-title">
                   {w.name}
@@ -138,6 +137,15 @@ export default function Workouts({ query }) {
           </button>
         </form>
       </Sheet>
+    </div>
+  )
+}
+
+export function WorkoutThumb({ workout, size = 'md' }) {
+  const cover = imageUrl(workoutCover(workout), true)
+  return (
+    <div className={'workout-thumb workout-thumb-' + size}>
+      {cover ? <img src={cover} alt="" loading="lazy" /> : <Icon name="dumbbell" size={24} strokeWidth={2.2} />}
     </div>
   )
 }

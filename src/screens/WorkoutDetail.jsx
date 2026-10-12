@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import Icon from '../components/Icon'
-import { PageHeader, toast } from '../components/ui'
+import { PageHeader, Sheet, toast } from '../components/ui'
 import { go } from '../lib/router'
 import { useStore } from '../lib/store'
-import { toKey, uid } from '../lib/dates'
+import { fmtBR, toKey, uid } from '../lib/dates'
+import { exerciseSlug, imageUrl, workoutCover } from '../lib/exerciseImages'
 
 const elapsed = (t) => {
   const s = Math.max(0, Math.floor((Date.now() - t) / 1000))
@@ -17,6 +18,8 @@ export default function WorkoutDetail({ id, query }) {
   const { state, update } = useStore()
   const workout = state.workouts.find((w) => w.id === id)
   const [editing, setEditing] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
+  const [showing, setShowing] = useState(null)
   const [, tick] = useState(0)
   const today = toKey()
   const session = state.session?.workoutId === id ? state.session : null
@@ -139,169 +142,264 @@ export default function WorkoutDetail({ id, query }) {
   }
 
   const doneCount = workout.exercises.filter((e) => checks.has(e.id)).length
+  const cover = imageUrl(workoutCover(workout))
+  const totalSets = workout.exercises.reduce((n, e) => n + (parseInt(e.sets, 10) || 0), 0)
+  const lastLog = [...state.logs]
+    .filter((l) => l.workoutId === id)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .at(-1)
 
   return (
-    <div>
-      <PageHeader
-        title={workout.name}
-        subtitle={[workout.focus, workout.duration].filter(Boolean).join(' · ')}
-        onBack={() => go('/treinos')}
-        right={
-          <button className="icon-btn" onClick={toggleEditing} aria-label={editing ? 'Salvar edição' : 'Editar treino'}>
-            <Icon name={editing ? 'check' : 'edit'} size={22} />
-          </button>
-        }
-      />
+    <div className="detail">
+      <div className={'detail-hero' + (cover ? '' : ' detail-hero-empty')}>
+        {cover ? <img src={cover} alt="" /> : <Icon name="dumbbell" size={56} strokeWidth={1.6} />}
+        <button className="hero-btn hero-back" onClick={() => go('/treinos')} aria-label="Voltar">
+          <Icon name="chevronLeft" size={22} />
+        </button>
+        <button className="hero-btn hero-edit" onClick={toggleEditing} aria-label={editing ? 'Salvar edição' : 'Editar treino'}>
+          <Icon name={editing ? 'check' : 'edit'} size={19} />
+        </button>
+      </div>
 
-      {editing && (
-        <section className="card form">
-          <label>
-            Nome
-            <input value={workout.name} onChange={(e) => setWorkout({ name: e.target.value })} />
-          </label>
-          <div className="form-row">
-            <label>
-              Foco
-              <input value={workout.focus} onChange={(e) => setWorkout({ focus: e.target.value })} />
-            </label>
-            <label>
-              Duração
-              <input value={workout.duration} onChange={(e) => setWorkout({ duration: e.target.value })} />
-            </label>
-          </div>
-        </section>
-      )}
+      <div className="detail-sheet">
+        <h1 className="serif detail-title">{workout.name}</h1>
+        {workout.focus && <p className="detail-sub">{workout.focus}</p>}
 
-      {!editing && session && (
-        <div className="session-bar">
-          <span className="session-live" />
-          <span>Em andamento</span>
-          <strong className="session-time">{elapsed(session.startedAt)}</strong>
-          <span className="session-count">
-            {doneCount}/{workout.exercises.length}
+        <div className="chips">
+          <span className="chip">
+            <Icon name="dumbbell" size={15} /> {workout.exercises.length} exercícios
           </span>
-        </div>
-      )}
-
-      {!editing && session && workout.exercises.length > 0 && (
-        <div className="progress-bar">
-          <span style={{ width: `${(doneCount / workout.exercises.length) * 100}%` }} />
-        </div>
-      )}
-
-      {!editing && otherSession && (
-        <p className="hint hint-box">
-          O {otherSession.name} está em andamento.{' '}
-          <button className="link-soft" onClick={() => go('/treinos/' + state.session.workoutId)}>
-            Voltar para ele
-          </button>
-        </p>
-      )}
-
-      <ul className="exercises">
-        {workout.exercises.map((e, i) =>
-          editing ? (
-            <li key={e.id} className="card exercise exercise-edit">
-              <input
-                className="ex-name-input"
-                value={e.name}
-                onChange={(ev) => setExercise(e.id, { name: ev.target.value })}
-                placeholder="Nome do exercício"
-              />
-              <div className="form-row form-row-3">
-                <label>
-                  Séries
-                  <input inputMode="numeric" value={e.sets} onChange={(ev) => setExercise(e.id, { sets: ev.target.value })} />
-                </label>
-                <label>
-                  Reps
-                  <input value={e.reps} onChange={(ev) => setExercise(e.id, { reps: ev.target.value })} />
-                </label>
-                <label>
-                  Descanso
-                  <input value={e.rest} onChange={(ev) => setExercise(e.id, { rest: ev.target.value })} />
-                </label>
-              </div>
-              <button className="link-danger" onClick={() => removeExercise(e)}>
-                <Icon name="trash" size={16} /> Remover
-              </button>
-            </li>
-          ) : (
-            <li key={e.id}>
-              <button
-                className={'card exercise' + (checks.has(e.id) ? ' exercise-done' : '') + (session ? '' : ' exercise-idle')}
-                onClick={() => toggle(e.id)}
-              >
-                <span className="ex-index">{i + 1}</span>
-                <span className="ex-body">
-                  <span className="ex-name">{e.name}</span>
-                  <span className="ex-meta">
-                    {e.sets} × {e.reps}
-                    {e.rest && <> · descanso {e.rest}</>}
-                  </span>
-                </span>
-                {session && <span className="ex-check">{checks.has(e.id) && <Icon name="check" size={16} strokeWidth={2.6} />}</span>}
-              </button>
-            </li>
-          ),
-        )}
-      </ul>
-
-      {workout.exercises.length === 0 && !editing && (
-        <div className="empty-state">
-          <Icon name="dumbbell" size={28} />
-          <p>Nenhum exercício ainda.</p>
-          <button className="btn-small" onClick={() => setEditing(true)}>
-            <Icon name="plus" size={14} /> Adicionar exercícios
-          </button>
-        </div>
-      )}
-
-      {editing ? (
-        <>
-          <button
-            className="add-row"
-            onClick={() => setWorkout({ exercises: [...workout.exercises, { id: uid(), name: '', sets: 3, reps: '12', rest: '60s' }] })}
-          >
-            <span className="add-icon">
-              <Icon name="plus" size={22} />
+          {workout.duration && (
+            <span className="chip">
+              <Icon name="clock" size={15} /> {workout.duration}
             </span>
-            <span className="add-text">
-              <strong>Adicionar exercício</strong>
-            </span>
-          </button>
-          <button className="btn-primary" onClick={toggleEditing}>
-            Salvar treino <Icon name="check" size={18} />
-          </button>
-          <button className="btn-ghost-danger" onClick={removeWorkout}>
-            Excluir treino
-          </button>
-        </>
-      ) : session ? (
-        <div className="session-actions">
-          <button className="btn-primary" onClick={finish}>
-            Concluir treino <Icon name="check" size={18} />
-          </button>
-          <button className="btn-ghost-danger" onClick={cancel}>
-            Cancelar treino
-          </button>
-        </div>
-      ) : workout.exercises.length > 0 ? (
-        <div className="session-actions">
-          {doneToday && (
-            <p className="done-note">
-              <Icon name="check" size={15} strokeWidth={2.4} /> Você concluiu este treino hoje
-              {doneToday.durationMin ? ` em ${doneToday.durationMin} min` : ''}.
-              <button className="link-soft" onClick={undoToday}>
-                Desfazer
-              </button>
-            </p>
           )}
-          <button className={doneToday ? 'btn-secondary' : 'btn-primary'} onClick={start}>
-            <Icon name="play" size={15} fill /> {doneToday ? 'Treinar de novo' : 'Começar treino'}
-          </button>
+          {totalSets > 0 && (
+            <span className="chip">
+              <Icon name="flame" size={15} /> {totalSets} séries
+            </span>
+          )}
         </div>
-      ) : null}
+
+        {lastLog && !session && (
+          <p className="detail-last">
+            Último treino: {fmtBR(lastLog.date)}
+            {lastLog.durationMin ? ` · ${lastLog.durationMin} min` : ''}
+          </p>
+        )}
+
+        {editing && (
+          <section className="form detail-edit">
+            <label>
+              Nome
+              <input value={workout.name} onChange={(e) => setWorkout({ name: e.target.value })} />
+            </label>
+            <div className="form-row">
+              <label>
+                Foco
+                <input value={workout.focus} onChange={(e) => setWorkout({ focus: e.target.value })} />
+              </label>
+              <label>
+                Duração
+                <input value={workout.duration} onChange={(e) => setWorkout({ duration: e.target.value })} />
+              </label>
+            </div>
+          </section>
+        )}
+
+        {!editing && session && (
+          <>
+            <div className="session-bar">
+              <span className="session-live" />
+              <span>Em andamento</span>
+              <strong className="session-time">{elapsed(session.startedAt)}</strong>
+              <span className="session-count">
+                {doneCount}/{workout.exercises.length}
+              </span>
+            </div>
+            <div className="progress-bar">
+              <span style={{ width: `${(doneCount / Math.max(1, workout.exercises.length)) * 100}%` }} />
+            </div>
+          </>
+        )}
+
+        {!editing && otherSession && (
+          <p className="hint hint-box">
+            O {otherSession.name} está em andamento.{' '}
+            <button className="link-soft" onClick={() => go('/treinos/' + state.session.workoutId)}>
+              Voltar para ele
+            </button>
+          </p>
+        )}
+
+        <section className="ex-section">
+          <button className="ex-section-head" onClick={() => setCollapsed(!collapsed)} aria-expanded={!collapsed}>
+            <span>Exercícios</span>
+            <span className={'ex-toggle' + (collapsed ? ' closed' : '')}>
+              <Icon name="chevronLeft" size={16} />
+            </span>
+          </button>
+
+          {!collapsed && (
+            <ul className="ex-list">
+              {workout.exercises.map((e, i) => {
+                const thumb = imageUrl(exerciseSlug(e), true)
+                if (editing) {
+                  return (
+                    <li key={e.id} className="ex-item ex-item-edit">
+                      <input
+                        className="ex-name-input"
+                        value={e.name}
+                        onChange={(ev) => setExercise(e.id, { name: ev.target.value })}
+                        placeholder="Nome do exercício"
+                      />
+                      <div className="form-row form-row-3">
+                        <label>
+                          Séries
+                          <input inputMode="numeric" value={e.sets} onChange={(ev) => setExercise(e.id, { sets: ev.target.value })} />
+                        </label>
+                        <label>
+                          Reps
+                          <input value={e.reps} onChange={(ev) => setExercise(e.id, { reps: ev.target.value })} />
+                        </label>
+                        <label>
+                          Descanso
+                          <input value={e.rest} onChange={(ev) => setExercise(e.id, { rest: ev.target.value })} />
+                        </label>
+                      </div>
+                      <button className="link-danger" onClick={() => removeExercise(e)}>
+                        <Icon name="trash" size={16} /> Remover
+                      </button>
+                    </li>
+                  )
+                }
+                const done = checks.has(e.id)
+                return (
+                  <li key={e.id}>
+                    <div className={'ex-item' + (done ? ' ex-item-done' : '')}>
+                      <button className="ex-thumb" onClick={() => setShowing(e)} aria-label={`Ver ${e.name}`}>
+                        {thumb ? <img src={thumb} alt="" loading="lazy" /> : <span className="ex-thumb-num">{i + 1}</span>}
+                      </button>
+                      <button className="ex-main" onClick={() => (session ? toggle(e.id) : setShowing(e))}>
+                        <span className="ex-name">{e.name}</span>
+                        <span className="ex-meta">
+                          <Icon name="clock" size={13} /> {e.sets} × {e.reps}
+                          {e.rest && <> · {e.rest}</>}
+                        </span>
+                      </button>
+                      {session ? (
+                        <button
+                          className={'ex-check' + (done ? ' on' : '')}
+                          onClick={() => toggle(e.id)}
+                          aria-label={done ? 'Desmarcar' : 'Marcar como feito'}
+                        >
+                          {done && <Icon name="check" size={16} strokeWidth={2.6} />}
+                        </button>
+                      ) : (
+                        <button className="ex-arrow" onClick={() => setShowing(e)} aria-label={`Ver ${e.name}`}>
+                          <Icon name="chevronRight" size={18} />
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+
+          {workout.exercises.length === 0 && !editing && (
+            <div className="empty-state">
+              <Icon name="dumbbell" size={28} />
+              <p>Nenhum exercício ainda.</p>
+              <button className="btn-small" onClick={() => setEditing(true)}>
+                <Icon name="plus" size={14} /> Adicionar exercícios
+              </button>
+            </div>
+          )}
+
+          {editing && (
+            <button
+              className="add-row"
+              onClick={() =>
+                setWorkout({ exercises: [...workout.exercises, { id: uid(), name: '', sets: 3, reps: '12', rest: '60s' }] })
+              }
+            >
+              <span className="add-icon">
+                <Icon name="plus" size={22} />
+              </span>
+              <span className="add-text">
+                <strong>Adicionar exercício</strong>
+              </span>
+            </button>
+          )}
+        </section>
+
+        {editing ? (
+          <div className="detail-cta">
+            <button className="btn-primary" onClick={toggleEditing}>
+              Salvar treino <Icon name="check" size={18} />
+            </button>
+            <button className="btn-ghost-danger" onClick={removeWorkout}>
+              Excluir treino
+            </button>
+          </div>
+        ) : session ? (
+          <div className="detail-cta">
+            <button className="btn-primary" onClick={finish}>
+              Concluir treino <Icon name="check" size={18} />
+            </button>
+            <button className="btn-ghost-danger" onClick={cancel}>
+              Cancelar treino
+            </button>
+          </div>
+        ) : workout.exercises.length > 0 ? (
+          <div className="detail-cta">
+            {doneToday && (
+              <p className="done-note">
+                <Icon name="check" size={15} strokeWidth={2.4} /> Concluído hoje
+                {doneToday.durationMin ? ` em ${doneToday.durationMin} min` : ''}.
+                <button className="link-soft" onClick={undoToday}>
+                  Desfazer
+                </button>
+              </p>
+            )}
+            <button className={doneToday ? 'btn-secondary' : 'btn-primary'} onClick={start}>
+              <Icon name="play" size={15} fill /> {doneToday ? 'Treinar de novo' : 'Começar treino'}
+            </button>
+          </div>
+        ) : null}
+      </div>
+
+      <Sheet open={!!showing} onClose={() => setShowing(null)} title={showing?.name}>
+        {showing && (
+          <div className="ex-detail">
+            {imageUrl(exerciseSlug(showing)) ? (
+              <img className="ex-detail-img" src={imageUrl(exerciseSlug(showing))} alt={showing.name} />
+            ) : (
+              <div className="ex-detail-img ex-detail-empty">
+                <Icon name="image" size={34} />
+                <span>Ilustração em breve</span>
+              </div>
+            )}
+            <div className="chips chips-center">
+              <span className="chip">{showing.sets} séries</span>
+              <span className="chip">{showing.reps} repetições</span>
+              {showing.rest && <span className="chip">descanso {showing.rest}</span>}
+            </div>
+            {session && (
+              <button
+                className={checks.has(showing.id) ? 'btn-secondary' : 'btn-primary'}
+                onClick={() => {
+                  toggle(showing.id)
+                  setShowing(null)
+                }}
+              >
+                {checks.has(showing.id) ? 'Desmarcar' : 'Marcar como feito'} <Icon name="check" size={18} />
+              </button>
+            )}
+          </div>
+        )}
+      </Sheet>
     </div>
   )
 }
